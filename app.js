@@ -1,5 +1,5 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const employees = [
   {name:'ALDI',role:'Direktur AI',initials:'AL',area:'Ruang Direktur',task:'Mengatur prioritas kerja tim dan menyiapkan ringkasan kondisi bisnis SakaPay.',about:'Memimpin koordinasi delapan personel AI dan menjadi pusat kendali operasional kantor.'},
