@@ -19,6 +19,9 @@ const loading = document.querySelector('#sceneLoading');
 let selectedEmployee = null;
 let renderer, scene, camera, controls, raycaster, pointer;
 const clickable = [];
+const employeeAnimations = [];
+const monitorAnimations = [];
+const officeClock = new THREE.Clock();
 
 function renderTeam(){
   teamGrid.innerHTML = employees.map((e,i)=>`<button class="employee-card" data-employee="${i}"><span class="avatar">${e.initials}</span><span class="employee-info"><strong>${e.name}</strong><small>${e.role}</small></span><i class="employee-status"></i></button>`).join('');
@@ -56,20 +59,21 @@ function createEmployee(index,x,z){
   const e=employees[index], group=new THREE.Group();group.position.set(x,0,z);group.userData.employeeIndex=index;
   const palette=[0x168f85,0x426fa9,0xb77d36,0x3c8290,0xa35f79,0x526c9b,0x9b7940,0x477d70];
   const cloth=makeMat(palette[index]), skin=makeMat(0xe8b994), dark=makeMat(0x172437), hair=makeMat(index%2?0x30251f:0x201d20);
-  const torso= new THREE.Mesh(new THREE.CapsuleGeometry(.24,.42,4,8),cloth);torso.position.y=.88;torso.castShadow=true;group.add(torso);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(.22,16,12),skin);head.position.y=1.42;head.castShadow=true;group.add(head);
-  const hairCap=new THREE.Mesh(new THREE.SphereGeometry(.225,16,8,0,Math.PI*2,0,Math.PI*.48),hair);hairCap.position.y=1.48;group.add(hairCap);
-  const legMat=dark;for(const side of [-1,1]){const leg=box(group,.13,.42,.15,side*.12,.25,0,legMat);leg.rotation.z=side*.04;}
-  const armMat=cloth;for(const side of [-1,1]){const arm=cylinder(group,.075,.085,.42,side*.29,.91,0,armMat,10);arm.rotation.z=side*.35;}
-  const badge= new THREE.Mesh(new THREE.BoxGeometry(.15,.075,.025),makeMat(0xe2f7f1));badge.position.set(0,.95,.238);group.add(badge);
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.24,.42,4,8),cloth);torso.position.y=.88;torso.castShadow=true;group.add(torso);
+  const headPivot=new THREE.Group();headPivot.position.set(0,1.22,0);group.add(headPivot);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.22,16,12),skin);head.position.y=.20;head.castShadow=true;headPivot.add(head);
+  const hairCap=new THREE.Mesh(new THREE.SphereGeometry(.225,16,8,0,Math.PI*2,0,Math.PI*.48),hair);hairCap.position.y=.26;headPivot.add(hairCap);
+  const legs=[];for(const side of [-1,1]){const legPivot=new THREE.Group();legPivot.position.set(side*.12,.45,0);group.add(legPivot);const leg=box(legPivot,.13,.42,.15,0,-.20,0,dark);legs.push(legPivot)}
+  const arms=[];for(const side of [-1,1]){const armPivot=new THREE.Group();armPivot.position.set(side*.29,1.04,0);group.add(armPivot);const arm=cylinder(armPivot,.075,.085,.42,0,-.20,0,cloth,10);arm.rotation.z=side*.10;arms.push(armPivot)}
+  const badge=new THREE.Mesh(new THREE.BoxGeometry(.15,.075,.025),makeMat(0xe2f7f1));badge.position.set(0,.95,.238);group.add(badge);
   const hit=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,1.9,12),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));hit.position.y=.95;hit.userData.employeeIndex=index;group.add(hit);clickable.push(hit);
   const label=textSprite(e.name);label.position.set(0,2.02,0);group.add(label);
-  scene.add(group);return group;
+  scene.add(group);employeeAnimations.push({group,torso,headPivot,arms,legs,phase:index*.83});return group;
 }
 function createDesk(x,z,rotation=0){
   const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;const wood=makeMat(0x9b7655),metal=makeMat(0x344a5d),screen=makeMat(0x142d42),glow=makeMat(0x3ccbb6);
   box(g,1.65,.13,.85,0,.82,0,wood);for(const sx of [-.65,.65])for(const sz of [-.3,.3])box(g,.07,.8,.07,sx,.4,sz,metal);
-  box(g,.72,.48,.055,0,1.18,-.24,metal);box(g,.64,.39,.025,0,1.19,-.205,screen,false);box(g,.48,.018,.012,0,1.18,-.185,glow,false);
+  box(g,.72,.48,.055,0,1.18,-.24,metal);screen.emissive=new THREE.Color(0x123d50);screen.emissiveIntensity=.55;box(g,.64,.39,.025,0,1.19,-.205,screen,false);monitorAnimations.push({material:screen,phase:monitorAnimations.length*.7});box(g,.48,.018,.012,0,1.18,-.185,glow,false);
   box(g,.52,.035,.25,0,.91,.17,metal);scene.add(g);
 }
 function createChair(x,z){const g=new THREE.Group();g.position.set(x,0,z);const m=makeMat(0x263c52);cylinder(g,.28,.28,.12,0,.48,0,m);box(g,.48,.52,.12,0,.8,-.16,m);cylinder(g,.07,.07,.42,0,.22,0,makeMat(0x71869b));scene.add(g)}
@@ -111,7 +115,24 @@ function buildOffice(){
 }
 function onSceneTap(event){const rect=renderer.domElement.getBoundingClientRect();pointer.x=((event.clientX-rect.left)/rect.width)*2-1;pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(clickable,false);if(hits.length)openEmployee(hits[0].object.userData.employeeIndex)}
 function resizeScene(){if(!renderer)return;const w=sceneRoot.clientWidth,h=sceneRoot.clientHeight;renderer.setSize(w,h);const aspect=w/h;const frustum=7;camera.left=-frustum*aspect/1.4;camera.right=frustum*aspect/1.4;camera.top=frustum;camera.bottom=-frustum;camera.updateProjectionMatrix()}
-function animate(){requestAnimationFrame(animate);controls?.update();renderer?.render(scene,camera)}
+function animate(){
+  requestAnimationFrame(animate);
+  const t=officeClock.getElapsedTime();
+  for(const a of employeeAnimations){
+    const wave=t*1.35+a.phase;
+    a.group.position.y=.018+Math.sin(wave)*.018;
+    a.torso.rotation.z=Math.sin(wave*.65)*.018;
+    a.headPivot.rotation.x=Math.sin(wave*.8)*.035;
+    a.arms[0].rotation.x=Math.sin(wave*1.7)*.12-.12;
+    a.arms[1].rotation.x=Math.sin(wave*1.7+1.4)*.12-.12;
+    a.arms[0].rotation.z=-.10+Math.sin(wave*1.1)*.035;
+    a.arms[1].rotation.z=.10-Math.sin(wave*1.1)*.035;
+    a.legs[0].rotation.x=Math.sin(wave*1.7)*.025;
+    a.legs[1].rotation.x=-Math.sin(wave*1.7)*.025;
+  }
+  for(const m of monitorAnimations)m.material.emissiveIntensity=.38+((Math.sin(t*2+m.phase)+1)*.18);
+  controls?.update();renderer?.render(scene,camera);
+}
 function toast(message){const el=document.querySelector('#toast');el.textContent=message;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1900)}
 
 renderTeam();renderActivity();
