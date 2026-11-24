@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#101b2b" />
+  <meta name="description" content="SakaPay AI Office - kantor virtual untuk mengelola bisnis SakaPay." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <title>SakaPay AI Office</title>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <div class="brand-mark">S</div>
+        <div><strong>SakaPay <span>AI Office</span></strong><small>VIRTUAL HEADQUARTERS</small></div>
+      </div>
+      <div class="top-actions">
+        <div class="live-pill"><i></i> OFFICE ONLINE</div>
+        <button class="icon-btn" id="installBtn" hidden aria-label="Install aplikasi">＋</button>
+        <button class="icon-btn" id="helpBtn" aria-label="Bantuan">?</button>
+      </div>
+    </header>
+
+    <section class="welcome-row">
+      <div>
+        <p class="eyebrow">SELAMAT DATANG, DIREKTUR</p>
+        <h1>Ruang kendali <span>SakaPay.</span></h1>
+        <p class="subheading">Pantau tim dan aktivitas kantor dari satu tempat.</p>
+      </div>
+      <div class="date-chip"><span class="date-dot"></span><span id="todayLabel">MEMUAT TANGGAL</span></div>
+    </section>
+
+    <section class="stats-grid" aria-label="Ringkasan kantor">
+      <article class="stat-card"><div class="stat-icon blue">♙</div><div><small>PERSONEL</small><strong>08 <em>karyawan</em></strong></div></article>
+      <article class="stat-card"><div class="stat-icon green">◉</div><div><small>STATUS KANTOR</small><strong>Aktif</strong></div></article>
+      <article class="stat-card"><div class="stat-icon amber">▤</div><div><small>RUANG KERJA</small><strong>04 <em>area</em></strong></div></article>
+    </section>
+
+    <section class="office-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">VIRTUAL WORKSPACE</p><h2>Denah kantor 3D</h2></div>
+        <div class="view-controls">
+          <button id="resetView" class="soft-btn">↺ <span>Reset</span></button>
+          <button id="zoomIn" class="soft-btn" aria-label="Perbesar">＋</button>
+          <button id="zoomOut" class="soft-btn" aria-label="Perkecil">−</button>
+        </div>
+      </div>
+      <div class="scene-frame">
+        <div id="scene" role="img" aria-label="Kantor 3D isometric SakaPay. Sentuh karyawan untuk melihat profil."></div>
+        <div class="scene-overlay"><span class="scene-live"><i></i> LIVE VIEW</span><span class="scene-hint">Geser untuk memutar · cubit untuk zoom</span></div>
+        <div class="scene-loading" id="sceneLoading"><div class="loader"></div><span>Menyiapkan kantor 3D...</span></div>
+      </div>
+      <p class="scene-caption"><span>●</span> Ketuk karakter karyawan untuk membuka profil dan tugasnya.</p>
+    </section>
+
+    <section class="team-section">
+      <div class="section-heading"><div><p class="eyebrow">OUR PEOPLE</p><h2>Tim SakaPay</h2></div><span class="team-count">08 PERSONEL</span></div>
+      <div class="team-grid" id="teamGrid"></div>
+    </section>
+
+    <section class="activity-section">
+      <div class="section-heading"><div><p class="eyebrow">OFFICE LOG</p><h2>Aktivitas kantor</h2></div><span class="muted-label">SIMULASI LOKAL</span></div>
+      <div class="activity-list" id="activityList"></div>
+    </section>
+
+    <footer><div class="footer-brand">SAKAPAY <span>AI OFFICE</span></div><p>FASE 1 · VIRTUAL OFFICE FOUNDATION</p><small>Data pada versi ini masih berupa simulasi di perangkat.</small></footer>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Navigasi utama">
+    <button class="nav-item active" data-target="top"><b>⌂</b><span>Beranda</span></button>
+    <button class="nav-item" data-target="office"><b>▦</b><span>Kantor</span></button>
+    <button class="nav-item" data-target="team"><b>♙</b><span>Tim</span></button>
+    <button class="nav-item" data-target="activity"><b>☷</b><span>Aktivitas</span></button>
+  </nav>
+  <div class="modal-backdrop" id="employeeModal" role="dialog" aria-modal="true" aria-label="Profil karyawan">
+    <section class="employee-modal">
+      <div class="modal-top"><span class="detail-label">PROFIL PERSONEL</span><button class="modal-close" id="modalClose" aria-label="Tutup">×</button></div>
+      <div class="modal-person"><div class="modal-avatar" id="modalInitials">AL</div><div><h3 id="modalName">ALDI</h3><p id="modalRole">Direktur AI</p></div></div>
+      <div class="detail-label">TENTANG PEGAWAI</div><p class="detail-text" id="modalAbout"></p>
+      <div class="task-box"><strong>◈ TUGAS SAAT INI</strong><p id="modalTask"></p></div>
+    </section>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
