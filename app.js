@@ -20,6 +20,7 @@ let selectedEmployee = null;
 let renderer, scene, camera, controls, raycaster, pointer;
 const clickable = [];
 const employeeAnimations = [];
+const employeeGroups = [];
 const monitorAnimations = [];
 const officeClock = new THREE.Clock();
 
@@ -134,6 +135,11 @@ function createPerson(index,x,z,options={}){
   const status=textSprite(isDirector?'PEMILIK SAKAPAY':'SEDANG BEKERJA','#d4fff4');
   status.position.set(0,2.52,0);status.scale.set(isDirector?2.7:2.15,.38,1);group.add(status);
   scene.add(group);
+  group.userData.home = new THREE.Vector3(x,0,z);
+  group.userData.moveFrom = null;
+  group.userData.moveTo = null;
+  group.userData.moveProgress = 1;
+  if(!isDirector) employeeGroups[index] = group;
   employeeAnimations.push({group,torso,headPivot,arms,legs,phase:(isDirector?2.4:index*.83),isDirector});
   return group;
 }
@@ -244,7 +250,20 @@ function animate(){
   const t=officeClock.getElapsedTime();
   for(const a of employeeAnimations){
     const wave=t*1.45+a.phase;
-    a.group.position.y=Math.sin(wave)*.012;
+    if(a.group.userData.moveTo && a.group.userData.moveProgress < 1){
+      a.group.userData.moveProgress = Math.min(1,a.group.userData.moveProgress + 0.012);
+      const p = a.group.userData.moveProgress;
+      const eased = p < .5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+      a.group.position.lerpVectors(a.group.userData.moveFrom,a.group.userData.moveTo,eased);
+      if(p >= 1){
+        a.group.position.copy(a.group.userData.moveTo);
+        a.group.userData.moveTo = null;
+        a.group.userData.moveFrom = null;
+      }
+      a.group.position.y = Math.abs(Math.sin(p*Math.PI*8))*.045;
+    } else {
+      a.group.position.y=Math.sin(wave)*.012;
+    }
     a.torso.rotation.z=Math.sin(wave*.7)*.025;
     a.headPivot.rotation.x=Math.sin(wave*.8)*.055;
     a.headPivot.rotation.y=Math.sin(wave*.43)*.09;
@@ -256,6 +275,36 @@ function animate(){
   for(const m of monitorAnimations)m.material.emissiveIntensity=.42+((Math.sin(t*2+m.phase)+1)*.22);
   controls?.update();renderer?.render(scene,camera);
 }
+function moveEmployee(group, target){
+  if(!group) return;
+  group.userData.moveFrom = group.position.clone();
+  group.userData.moveTo = new THREE.Vector3(target.x,0,target.z);
+  group.userData.moveProgress = 0;
+}
+function callTeamToMeeting(){
+  const seats = [
+    {x:-1.35,z:-.95},{x:1.35,z:-.95},
+    {x:-1.35,z:1.15},{x:1.35,z:1.15},
+    {x:-2.35,z:.1},{x:2.35,z:.1},
+    {x:-3.0,z:1.7},{x:3.0,z:1.7}
+  ];
+  employeeGroups.forEach((group,i)=>moveEmployee(group,seats[i]));
+  logOfficeActivity('Tim SakaPay','TS','Bergerak menuju ruang rapat.');
+  toast('Tim dipanggil ke ruang rapat');
+}
+function returnTeamToDesk(){
+  employeeGroups.forEach(group=>{
+    if(group && group.userData.home) moveEmployee(group,group.userData.home);
+  });
+  logOfficeActivity('Tim SakaPay','TS','Kembali ke meja kerja masing-masing.');
+  toast('Tim kembali ke meja kerja');
+}
+const officeActivity = [];
+function logOfficeActivity(name, initials, message){
+  officeActivity.unshift({name,initials,message});
+  officeActivity.splice(8);
+  activityList.innerHTML = officeActivity.map(item=>`<div class="activity-item"><div class="activity-symbol">${item.initials}</div><div class="activity-copy"><strong>${item.name} · ${item.message}</strong><small>Aktivitas simulasi kantor</small></div><span class="activity-time">Baru saja</span></div>`).join('');
+}
 function toast(message){const el=document.querySelector('#toast');el.textContent=message;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1900)}
 
 renderTeam();renderActivity();
@@ -263,6 +312,8 @@ const now=new Date();document.querySelector('#todayLabel').textContent=now.toLoc
 document.querySelector('#modalClose').addEventListener('click',closeEmployee);document.querySelector('#employeeModal').addEventListener('click',e=>{if(e.target.id==='employeeModal')closeEmployee()});
 document.querySelector('#resetView').addEventListener('click',()=>{if(!camera)return;camera.position.set(12,16,14);camera.zoom=1;camera.lookAt(0,0,0);camera.updateProjectionMatrix();controls.target.set(0,.2,0);controls.update();toast('Tampilan kantor direset')});
 document.querySelector('#zoomIn').addEventListener('click',()=>{if(camera){camera.zoom=Math.min(1.65,camera.zoom+.12);camera.updateProjectionMatrix()}});document.querySelector('#zoomOut').addEventListener('click',()=>{if(camera){camera.zoom=Math.max(.7,camera.zoom-.12);camera.updateProjectionMatrix()}});
+document.querySelector('#meetingBtn')?.addEventListener('click',callTeamToMeeting);
+document.querySelector('#returnBtn')?.addEventListener('click',returnTeamToDesk);
 document.querySelector('#helpBtn').addEventListener('click',()=>toast('Ketuk karakter untuk membuka profil. Geser denah untuk memutar kantor.'));
 document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));btn.classList.add('active');const target=btn.dataset.target;document.querySelector(target==='top'?'.topbar':target==='office'?'.office-section':target==='team'?'.team-section':'.activity-section').scrollIntoView({behavior:'smooth',block:'start'})}));
 try{buildOffice()}catch(err){console.error(err);loading.innerHTML='<span>Gagal memuat 3D. Periksa koneksi internet lalu muat ulang.</span>'}
