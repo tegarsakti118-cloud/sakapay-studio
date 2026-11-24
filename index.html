@@ -17,13 +17,6 @@
     }
   </script>
   <title>SakaPay AI Office</title>
-  <style>
-    .meeting-controls{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 4px}
-    .meeting-action{border:0;border-radius:12px;padding:12px 15px;background:#168f85;color:#fff;font:600 13px Arial,sans-serif;cursor:pointer}
-    .meeting-action.secondary{background:#e9dfcf;color:#463b30}
-    .meeting-action:active{transform:scale(.98)}
-    @media(max-width:420px){.meeting-controls{display:grid;grid-template-columns:1fr 1fr}.meeting-action{padding:11px 8px;font-size:12px}}
-  </style>
 </head>
 <body>
   <main class="app-shell">
@@ -69,9 +62,9 @@
         <div class="scene-loading" id="sceneLoading"><div class="loader"></div><span>Menyiapkan kantor 3D...</span></div>
       </div>
       <p class="scene-caption"><span>●</span> Ketuk ALDI–GITA untuk melihat profil. Avatar DIREKTUR mewakili pemilik SakaPay.</p>
-      <div class="meeting-controls" aria-label="Kontrol aktivitas tim">
-        <button type="button" id="meetingBtn" class="meeting-action">▣ Panggil Tim ke Rapat</button>
-        <button type="button" id="returnBtn" class="meeting-action secondary">↩ Kembali ke Meja</button>
+      <div class="meeting-controls" style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0">
+        <button type="button" id="meetingBtn" style="border:0;border-radius:12px;padding:12px 15px;background:#168f85;color:white;font-weight:600">▣ Panggil Tim ke Rapat</button>
+        <button type="button" id="returnBtn" style="border:0;border-radius:12px;padding:12px 15px;background:#e9dfcf;color:#463b30;font-weight:600">↩ Kembali ke Meja</button>
       </div>
     </section>
 

@@ -275,36 +275,6 @@ function animate(){
   for(const m of monitorAnimations)m.material.emissiveIntensity=.42+((Math.sin(t*2+m.phase)+1)*.22);
   controls?.update();renderer?.render(scene,camera);
 }
-function moveEmployee(group, target){
-  if(!group) return;
-  group.userData.moveFrom = group.position.clone();
-  group.userData.moveTo = new THREE.Vector3(target.x,0,target.z);
-  group.userData.moveProgress = 0;
-}
-function callTeamToMeeting(){
-  const seats = [
-    {x:-1.35,z:-.95},{x:1.35,z:-.95},
-    {x:-1.35,z:1.15},{x:1.35,z:1.15},
-    {x:-2.35,z:.1},{x:2.35,z:.1},
-    {x:-3.0,z:1.7},{x:3.0,z:1.7}
-  ];
-  employeeGroups.forEach((group,i)=>moveEmployee(group,seats[i]));
-  logOfficeActivity('Tim SakaPay','TS','Bergerak menuju ruang rapat.');
-  toast('Tim dipanggil ke ruang rapat');
-}
-function returnTeamToDesk(){
-  employeeGroups.forEach(group=>{
-    if(group && group.userData.home) moveEmployee(group,group.userData.home);
-  });
-  logOfficeActivity('Tim SakaPay','TS','Kembali ke meja kerja masing-masing.');
-  toast('Tim kembali ke meja kerja');
-}
-const officeActivity = [];
-function logOfficeActivity(name, initials, message){
-  officeActivity.unshift({name,initials,message});
-  officeActivity.splice(8);
-  activityList.innerHTML = officeActivity.map(item=>`<div class="activity-item"><div class="activity-symbol">${item.initials}</div><div class="activity-copy"><strong>${item.name} · ${item.message}</strong><small>Aktivitas simulasi kantor</small></div><span class="activity-time">Baru saja</span></div>`).join('');
-}
 function toast(message){const el=document.querySelector('#toast');el.textContent=message;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1900)}
 
 renderTeam();renderActivity();
@@ -312,8 +282,30 @@ const now=new Date();document.querySelector('#todayLabel').textContent=now.toLoc
 document.querySelector('#modalClose').addEventListener('click',closeEmployee);document.querySelector('#employeeModal').addEventListener('click',e=>{if(e.target.id==='employeeModal')closeEmployee()});
 document.querySelector('#resetView').addEventListener('click',()=>{if(!camera)return;camera.position.set(12,16,14);camera.zoom=1;camera.lookAt(0,0,0);camera.updateProjectionMatrix();controls.target.set(0,.2,0);controls.update();toast('Tampilan kantor direset')});
 document.querySelector('#zoomIn').addEventListener('click',()=>{if(camera){camera.zoom=Math.min(1.65,camera.zoom+.12);camera.updateProjectionMatrix()}});document.querySelector('#zoomOut').addEventListener('click',()=>{if(camera){camera.zoom=Math.max(.7,camera.zoom-.12);camera.updateProjectionMatrix()}});
-document.querySelector('#meetingBtn')?.addEventListener('click',callTeamToMeeting);
-document.querySelector('#returnBtn')?.addEventListener('click',returnTeamToDesk);
+function moveEmployee(group,target){
+  if(!group) return;
+  group.userData.moveFrom = group.position.clone();
+  group.userData.moveTo = new THREE.Vector3(target.x,0,target.z);
+  group.userData.moveProgress = 0;
+}
+function teamMeeting(){
+  const seats=[
+    {x:-1.35,z:-.95},{x:1.35,z:-.95},
+    {x:-1.35,z:1.15},{x:1.35,z:1.15},
+    {x:-2.35,z:.1},{x:2.35,z:.1},
+    {x:-3,z:1.7},{x:3,z:1.7}
+  ];
+  employeeGroups.forEach((group,i)=>moveEmployee(group,seats[i]));
+  toast('Tim dipanggil ke ruang rapat');
+}
+function teamReturn(){
+  employeeGroups.forEach(group=>{
+    if(group && group.userData.home) moveEmployee(group,group.userData.home);
+  });
+  toast('Tim kembali ke meja kerja');
+}
+document.querySelector('#meetingBtn')?.addEventListener('click',teamMeeting);
+document.querySelector('#returnBtn')?.addEventListener('click',teamReturn);
 document.querySelector('#helpBtn').addEventListener('click',()=>toast('Ketuk karakter untuk membuka profil. Geser denah untuk memutar kantor.'));
 document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));btn.classList.add('active');const target=btn.dataset.target;document.querySelector(target==='top'?'.topbar':target==='office'?'.office-section':target==='team'?'.team-section':'.activity-section').scrollIntoView({behavior:'smooth',block:'start'})}));
 try{buildOffice()}catch(err){console.error(err);loading.innerHTML='<span>Gagal memuat 3D. Periksa koneksi internet lalu muat ulang.</span>'}
