@@ -45,6 +45,14 @@ function openEmployee(index){
   document.querySelector('#modalTask').textContent=selectedEmployee.task;
   document.querySelector('#employeeModal').classList.add('open');
 }
+function openDirector(){
+  document.querySelector('#modalInitials').textContent='DR';
+  document.querySelector('#modalName').textContent='DIREKTUR SAKAPAY';
+  document.querySelector('#modalRole').textContent='Pemilik bisnis · Ruang Direktur';
+  document.querySelector('#modalAbout').textContent='Avatar direktur yang mewakili pemilik SakaPay. Penampilan dan nama dapat disesuaikan nanti.';
+  document.querySelector('#modalTask').textContent='Mengawasi seluruh tim, menyetujui keputusan penting, dan menentukan arah bisnis SakaPay.';
+  document.querySelector('#employeeModal').classList.add('open');
+}
 function closeEmployee(){document.querySelector('#employeeModal').classList.remove('open')}
 function makeMat(color,roughness=.8){return new THREE.MeshStandardMaterial({color,roughness})}
 function box(parent,w,h,d,x,y,z,material,cast=true){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=cast;m.receiveShadow=true;parent.add(m);return m}
@@ -55,82 +63,197 @@ function textSprite(text,color='#d8f5f0'){
   ctx.font='bold 42px Arial';ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,66);
   const tex=new THREE.CanvasTexture(canvas);const mat=new THREE.SpriteMaterial({map:tex,transparent:false});const s=new THREE.Sprite(mat);s.scale.set(3.1,.78,1);return s;
 }
-function createEmployee(index,x,z){
-  const e=employees[index], group=new THREE.Group();group.position.set(x,0,z);group.userData.employeeIndex=index;
+
+function makeWood(color=0xc28b5c){return new THREE.MeshStandardMaterial({color,roughness:.88})}
+function createWindow(x,y,z,w,h){
+  const frame=makeMat(0x65442e), pane=new THREE.MeshStandardMaterial({color:0x8ed8f2,roughness:.25,metalness:.05,emissive:0x17394a,emissiveIntensity:.18});
+  box(scene,w+.12,h+.12,.13,x,y,z,frame);
+  box(scene,w,h,.06,x,y,z+.075,pane,false);
+  box(scene,.045,h,.08,x,y,z+.12,frame,false);
+  box(scene,w,.045,.08,x,y,z+.12,frame,false);
+}
+function createDesk(x,z,rotation=0,accent=0xc58c5a){
+  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;
+  const wood=makeWood(accent), legs=makeMat(0x76543b), monitorFrame=makeMat(0x202a40);
+  const screen=new THREE.MeshStandardMaterial({color:0x152d42,roughness:.35,emissive:0x1b8792,emissiveIntensity:.5});
+  box(g,1.55,.14,.82,0,.83,0,wood);
+  for(const sx of [-.64,.64])for(const sz of [-.29,.29])box(g,.075,.8,.075,sx,.4,sz,legs);
+  box(g,.68,.47,.075,0,1.18,-.25,monitorFrame);
+  box(g,.59,.36,.025,0,1.19,-.205,screen,false);
+  monitorAnimations.push({material:screen,phase:monitorAnimations.length*.63});
+  box(g,.42,.018,.012,0,1.18,-.185,makeMat(0x5ce0c6),false);
+  box(g,.48,.035,.24,0,.93,.18,makeMat(0x343b4d));
+  // Keyboard and a small desk accessory
+  box(g,.48,.025,.16,0,.92,.32,makeMat(0x303a4c),false);
+  const cup=cylinder(g,.065,.075,.14,.57,.97,.2,makeMat(0xd46f4e),12);
+  scene.add(g);
+}
+function createChair(x,z,rotation=0){
+  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;
+  const chair=makeMat(0x42375f), metal=makeMat(0x39495c);
+  box(g,.58,.16,.55,0,.53,0,chair);
+  box(g,.58,.68,.14,0,.88,-.22,chair);
+  cylinder(g,.075,.075,.38,0,.25,0,metal,10);
+  for(let i=0;i<5;i++){const a=i*Math.PI*2/5;box(g,.42,.055,.07,Math.cos(a)*.19,.08,Math.sin(a)*.19,metal).rotation.y=a}
+  scene.add(g);return g;
+}
+function createPerson(index,x,z,options={}){
+  const isDirector=!!options.director;
+  const group=new THREE.Group();group.position.set(x,0,z);
+  group.userData.employeeIndex=index;group.userData.isDirector=isDirector;
   const palette=[0x168f85,0x426fa9,0xb77d36,0x3c8290,0xa35f79,0x526c9b,0x9b7940,0x477d70];
-  const cloth=makeMat(palette[index]), skin=makeMat(0xe8b994), dark=makeMat(0x172437), hair=makeMat(index%2?0x30251f:0x201d20);
-  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.24,.42,4,8),cloth);torso.position.y=.88;torso.castShadow=true;group.add(torso);
-  const headPivot=new THREE.Group();headPivot.position.set(0,1.22,0);group.add(headPivot);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(.22,16,12),skin);head.position.y=.20;head.castShadow=true;headPivot.add(head);
-  const hairCap=new THREE.Mesh(new THREE.SphereGeometry(.225,16,8,0,Math.PI*2,0,Math.PI*.48),hair);hairCap.position.y=.26;headPivot.add(hairCap);
-  const legs=[];for(const side of [-1,1]){const legPivot=new THREE.Group();legPivot.position.set(side*.12,.45,0);group.add(legPivot);const leg=box(legPivot,.13,.42,.15,0,-.20,0,dark);legs.push(legPivot)}
-  const arms=[];for(const side of [-1,1]){const armPivot=new THREE.Group();armPivot.position.set(side*.29,1.04,0);group.add(armPivot);const arm=cylinder(armPivot,.075,.085,.42,0,-.20,0,cloth,10);arm.rotation.z=side*.10;arms.push(armPivot)}
-  const badge=new THREE.Mesh(new THREE.BoxGeometry(.15,.075,.025),makeMat(0xe2f7f1));badge.position.set(0,.95,.238);group.add(badge);
-  const hit=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,1.9,12),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));hit.position.y=.95;hit.userData.employeeIndex=index;group.add(hit);clickable.push(hit);
-  const label=textSprite(e.name);label.position.set(0,2.02,0);group.add(label);
-  scene.add(group);employeeAnimations.push({group,torso,headPivot,arms,legs,phase:index*.83});return group;
+  const cloth=makeMat(options.color ?? palette[index] ?? 0x19a999);
+  const skin=makeMat(0xe8b994), dark=makeMat(0x263047), hair=makeMat(isDirector?0x171b25:(index%2?0x30251f:0x201d20));
+  // Seated low-poly body
+  const hips=box(group,.42,.24,.34,0,.59,.04,dark);
+  const torso=box(group,.48,.57,.34,0,.96,0,cloth);
+  torso.rotation.x=-.08;
+  const neck=cylinder(group,.095,.095,.13,0,1.27,0,skin,8);
+  const headPivot=new THREE.Group();headPivot.position.set(0,1.34,0);group.add(headPivot);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.235,12,9),skin);head.position.y=.17;head.castShadow=true;headPivot.add(head);
+  const hairCap=new THREE.Mesh(new THREE.SphereGeometry(.24,12,7,0,Math.PI*2,0,Math.PI*.48),hair);hairCap.position.y=.23;headPivot.add(hairCap);
+  // Seated legs point toward the desk
+  const legs=[];
+  for(const side of [-1,1]){
+    const thigh=box(group,.17,.17,.43,side*.13,.48,.34,dark);thigh.rotation.x=-.08;
+    const shoe=box(group,.18,.13,.25,side*.13,.35,.56,makeMat(0x1a2232));
+    legs.push(thigh);
+  }
+  // Arms reach forward to keyboard; pivots animate a typing motion
+  const arms=[];
+  for(const side of [-1,1]){
+    const pivot=new THREE.Group();pivot.position.set(side*.29,1.12,.02);group.add(pivot);
+    const upper=cylinder(pivot,.085,.095,.34,0,-.14,.08,cloth,8);upper.rotation.x=-1.0;upper.rotation.z=side*.12;
+    const hand=new THREE.Mesh(new THREE.SphereGeometry(.075,8,6),skin);hand.position.set(0,-.29,.24);pivot.add(hand);
+    arms.push(pivot);
+  }
+  const hit=new THREE.Mesh(new THREE.CylinderGeometry(.52,.52,1.9,12),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+  hit.position.y=.95;hit.userData.employeeIndex=index;hit.userData.isDirector=isDirector;group.add(hit);clickable.push(hit);
+  const label=textSprite(isDirector?'DIREKTUR':employees[index].name,isDirector?'#fff0bd':'#e8f7ff');
+  label.position.set(0,2.12,0);label.scale.set(isDirector?2.5:2.0,.52,1);group.add(label);
+  const status=textSprite(isDirector?'PEMILIK SAKAPAY':'SEDANG BEKERJA','#d4fff4');
+  status.position.set(0,2.52,0);status.scale.set(isDirector?2.7:2.15,.38,1);group.add(status);
+  scene.add(group);
+  employeeAnimations.push({group,torso,headPivot,arms,legs,phase:(isDirector?2.4:index*.83),isDirector});
+  return group;
 }
-function createDesk(x,z,rotation=0){
-  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;const wood=makeMat(0x9b7655),metal=makeMat(0x344a5d),screen=makeMat(0x142d42),glow=makeMat(0x3ccbb6);
-  box(g,1.65,.13,.85,0,.82,0,wood);for(const sx of [-.65,.65])for(const sz of [-.3,.3])box(g,.07,.8,.07,sx,.4,sz,metal);
-  box(g,.72,.48,.055,0,1.18,-.24,metal);screen.emissive=new THREE.Color(0x123d50);screen.emissiveIntensity=.55;box(g,.64,.39,.025,0,1.19,-.205,screen,false);monitorAnimations.push({material:screen,phase:monitorAnimations.length*.7});box(g,.48,.018,.012,0,1.18,-.185,glow,false);
-  box(g,.52,.035,.25,0,.91,.17,metal);scene.add(g);
+function createPlant(x,z){
+  const pot=makeMat(0x9c7657),leaf=makeMat(0x299c78);
+  cylinder(scene,.2,.25,.34,x,.17,z,pot);
+  for(let i=0;i<5;i++){const a=i*Math.PI*2/5;const l=new THREE.Mesh(new THREE.ConeGeometry(.12,.65,6),leaf);l.position.set(x+Math.cos(a)*.12,.62,z+Math.sin(a)*.12);l.rotation.z=Math.cos(a)*-.4;l.rotation.x=Math.sin(a)*.4;l.castShadow=true;scene.add(l)}
 }
-function createChair(x,z){const g=new THREE.Group();g.position.set(x,0,z);const m=makeMat(0x263c52);cylinder(g,.28,.28,.12,0,.48,0,m);box(g,.48,.52,.12,0,.8,-.16,m);cylinder(g,.07,.07,.42,0,.22,0,makeMat(0x71869b));scene.add(g)}
-function createPlant(x,z){const pot=makeMat(0x9c7657),leaf=makeMat(0x299c78);cylinder(scene,.2,.25,.34,x,.17,z,pot);for(let i=0;i<5;i++){const a=i*Math.PI*2/5;const l=new THREE.Mesh(new THREE.ConeGeometry(.12,.65,7),leaf);l.position.set(x+Math.cos(a)*.12,.62,z+Math.sin(a)*.12);l.rotation.z=Math.cos(a)*-.4;l.rotation.x=Math.sin(a)*.4;l.castShadow=true;scene.add(l)}}
-function createRoomLabel(text,x,z){const s=textSprite(text,'#d8f5f0');s.position.set(x,2.5,z);s.scale.set(2.6,.65,1);scene.add(s)}
+function createRoomLabel(text,x,z,color='#fff0c7'){
+  const s=textSprite(text,color);s.position.set(x,2.1,z);s.scale.set(2.35,.52,1);scene.add(s);
+}
 function buildOffice(){
-  scene=new THREE.Scene();scene.background=new THREE.Color(0x0d1b2b);scene.fog=new THREE.Fog(0x0d1b2b,18,34);
-  camera=new THREE.OrthographicCamera(-10,10,7,-7,.1,100);camera.position.set(11,14,13);camera.lookAt(0,0,0);
-  renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.7));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setSize(sceneRoot.clientWidth,sceneRoot.clientHeight);sceneRoot.appendChild(renderer.domElement);
-  controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.07;controls.enablePan=true;controls.minZoom=.7;controls.maxZoom=1.65;controls.minPolarAngle=.45;controls.maxPolarAngle=1.25;controls.target.set(0,.2,0);camera.zoom=1;camera.updateProjectionMatrix();
-  scene.add(new THREE.HemisphereLight(0xb9d8ff,0x243044,2));const key=new THREE.DirectionalLight(0xffe2bd,2.5);key.position.set(5,12,7);key.castShadow=true;key.shadow.mapSize.set(1024,1024);scene.add(key);
-  const floor=box(scene,14,.35,10,0,-.2,0,makeMat(0x23394d),false);floor.receiveShadow=true;
-  // Raised platform border and subtle floor divisions
-  const edge=makeMat(0x4a6a7d);box(scene,14.2,.18,.14,0,-.05,5.02,edge,false);box(scene,14.2,.18,.14,0,-.05,-5.02,edge,false);box(scene,.14,.18,10,7.02,-.05,0,edge,false);box(scene,.14,.18,10,-7.02,-.05,0,edge,false);
-  const wall=makeMat(0x304b60), glass= new THREE.MeshStandardMaterial({color:0x5793a5,transparent:true,opacity:.22,roughness:.25});
-  // Low perimeter walls keep the office readable from the isometric camera
-  box(scene,14,.9,.13,0,.35,-4.95,wall);box(scene,.13,.9,10,-6.95,.35,0,wall);box(scene,.13,.9,10,6.95,.35,0,wall);
-  // Area dividers
-  box(scene,.09,.75,3.5,-2.4,.35,-3.1,glass);box(scene,4,.75,.08,-4.4,.35,-1.35,glass);box(scene,.09,.75,3.5,2.25,.35,-3.1,glass);box(scene,4,.75,.08,4.4,.35,-1.35,glass);
-  createRoomLabel('DIRECTOR',-4.5,-4.3);createRoomLabel('FINANCE',0,-4.3);createRoomLabel('OPERATIONS',4.5,-4.3);createRoomLabel('TEAM HUB',0,1.1);
-  // Director area
-  createDesk(-4.5,-2.9);createChair(-4.5,-1.9);createEmployee(0,-4.5,-2.0);
-  // Finance + admin desks
-  createDesk(-1.1,-2.9);createChair(-1.1,-1.95);createEmployee(1,-1.1,-1.65);
-  createDesk(1.2,-2.9);createChair(1.2,-1.95);createEmployee(2,1.3,-1.65);
-  // Operations and service
-  createDesk(4.5,-2.9);createChair(4.5,-1.95);createEmployee(3,4.5,-1.65);
-  // Open collaboration desks
-  createDesk(-4.4,2.5,.18);createChair(-4.4,3.5);createEmployee(4,-4.4,3.65);
-  createDesk(-1.5,2.5,.18);createChair(-1.5,3.5);createEmployee(5,-1.5,3.65);
-  createDesk(1.5,2.5,.18);createChair(1.5,3.5);createEmployee(6,1.5,3.65);
-  createDesk(4.4,2.5,.18);createChair(4.4,3.5);createEmployee(7,4.4,3.65);
-  // Meeting table, plants, lighting features
-  const table=makeMat(0x52748a);cylinder(scene,1.05,1.05,.16,0,.62,.15,table,32);cylinder(scene,.12,.12,.58,0,.29,.15,makeMat(0x31495d));
-  for(let i=0;i<4;i++){const a=i*Math.PI/2;const chair=new THREE.Group();chair.position.set(Math.cos(a)*1.35,0,.15+Math.sin(a)*1.35);box(chair,.42,.12,.42,0,.42,0,makeMat(0x31495d));box(chair,.42,.5,.1,0,.7,-.16,makeMat(0x31495d));scene.add(chair)}
-  createPlant(-6,4.2);createPlant(6,4.2);createPlant(-6,-4.2);createPlant(6,-4.2);
-  raycaster=new THREE.Raycaster();pointer=new THREE.Vector2();renderer.domElement.addEventListener('pointerup',onSceneTap);
-  resizeScene();window.addEventListener('resize',resizeScene);animate();loading.classList.add('hide');setTimeout(()=>loading.remove(),500);
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x101a2b);
+  scene.fog=new THREE.Fog(0x101a2b,22,38);
+  camera=new THREE.OrthographicCamera(-10,10,7,-7,.1,100);
+  camera.position.set(12,16,14);camera.lookAt(0,.2,0);
+  renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.6));
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.setSize(sceneRoot.clientWidth,sceneRoot.clientHeight);sceneRoot.appendChild(renderer.domElement);
+  controls=new OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true;controls.dampingFactor=.075;controls.enablePan=true;
+  controls.minZoom=.68;controls.maxZoom=1.8;controls.minPolarAngle=.48;controls.maxPolarAngle=1.28;
+  controls.target.set(0,.35,0);camera.zoom=1;camera.updateProjectionMatrix();
+  scene.add(new THREE.HemisphereLight(0xfff0d8,0x536176,2.15));
+  const key=new THREE.DirectionalLight(0xffe4c4,2.6);key.position.set(-5,13,8);key.castShadow=true;key.shadow.mapSize.set(1024,1024);scene.add(key);
+  const fill=new THREE.DirectionalLight(0x8ecbff,.8);fill.position.set(8,8,-5);scene.add(fill);
+
+  // Warm wood floor with visible plank seams
+  box(scene,16,.32,11.5,0,-.2,0,makeWood(0xd7b987),false);
+  const seam=makeMat(0xb58d61);
+  for(let z=-5;z<=5;z+=1.05)box(scene,15.8,.012,.018,0,-.028,z,seam,false);
+  for(let x=-7;x<=7;x+=2.4)box(scene,.018,.012,11.2,x,-.027,0,seam,false);
+
+  // Colored rugs define work zones
+  box(scene,5.1,.035,3.2,-4.8,.0,-2.8,makeMat(0xd76b39),false);
+  box(scene,9.5,.035,3.1,1.8,.0,2.7,makeMat(0xe9aa37),false);
+  box(scene,3.4,.035,2.4,-5.6,.0,2.6,makeMat(0x3d9b91),false);
+
+  // Cutaway walls, wooden trims and windows
+  const wall=makeMat(0xd5c4aa), trim=makeMat(0x8b5d3c), glass=makeMat(0x6b9cb4);
+  box(scene,16,.22,.18,0,.95,-5.68,trim);
+  box(scene,16,1.85,.14,0,1.85,-5.72,wall);
+  box(scene,.16,2.0,11.5,-7.92,.9,0,wall);
+  box(scene,.16,2.0,11.5,7.92,.9,0,wall);
+  box(scene,16,.16,.16,0,.1,5.68,trim);
+  // Three broad windows along the back wall
+  createWindow(-5.2,1.95,-5.60,2.2,1.25);
+  createWindow(-1.7,1.95,-5.60,2.2,1.25);
+  createWindow(1.8,1.95,-5.60,2.2,1.25);
+  createWindow(5.25,1.95,-5.60,2.2,1.25);
+  // Side windows
+  createWindow(-7.78,1.85,-2.7,.06,1.25);
+  createWindow(7.78,1.85,2.4,.06,1.25);
+
+  // Low partitions make separate departments while keeping the room visible
+  const partition=makeMat(0xe2d3bd), partitionTop=makeMat(0x956443);
+  function halfWall(w,d,x,z){box(scene,w,1.05,d,x,.53,z,partition);box(scene,w+.06,.09,d+.06,x,1.1,z,partitionTop)}
+  halfWall(4.7,.14,-4.8,-.25);
+  halfWall(.14,3.1,-2.35,-3.7);
+  halfWall(4.2,.14,3.1,-.35);
+  halfWall(.14,3.0,1.0,-3.9);
+  halfWall(4.4,.14,-4.8,4.35);
+  createRoomLabel('DIREKTUR',-5.1,-4.8);
+  createRoomLabel('FINANCE & ADMIN',-0.7,-4.8);
+  createRoomLabel('OPERASIONAL',4.7,-4.8);
+  createRoomLabel('TEAM WORKSPACE',2.1,4.9);
+
+  // Director's dedicated office and desk
+  createDesk(-5.65,-2.8,0,0xd3a06d);
+  createChair(-5.65,-1.85);
+  createPerson(-1,-5.65,-1.72,{director:true,color:0x159f91});
+
+  // Eight AI employees in two rows of four
+  const xs=[-4.6,-1.55,1.55,4.6];
+  const backZ=-2.65, frontZ=2.0;
+  let n=0;
+  for(const x of xs){
+    createDesk(x,backZ,0,[0xc99562,0xd0a06c,0xc18d5d,0xd4a777][n%4]);
+    createChair(x,backZ+.92);
+    createPerson(n,x,backZ+.98);n++;
+  }
+  for(const x of xs){
+    createDesk(x,frontZ,0,[0xc99562,0xd0a06c,0xc18d5d,0xd4a777][n%4]);
+    createChair(x,frontZ+.92);
+    createPerson(n,x,frontZ+.98);n++;
+  }
+
+  // Meeting table, seats, wall board and office details
+  cylinder(scene,.95,.95,.16,0,.62,.15,makeMat(0x8b5c43),24);
+  cylinder(scene,.12,.12,.58,0,.29,.15,makeMat(0x76543b),12);
+  for(let i=0;i<4;i++){const a=i*Math.PI/2;const chair=new THREE.Group();chair.position.set(Math.cos(a)*1.25,0,.15+Math.sin(a)*1.25);box(chair,.42,.14,.42,0,.43,0,makeMat(0x49395f));box(chair,.42,.5,.1,0,.7,-.16,makeMat(0x49395f));scene.add(chair)}
+  // Wall-mounted status board
+  box(scene,2.1,1.0,.12,5.8,1.45,-5.48,makeMat(0x51443a));
+  box(scene,1.9,.8,.035,5.8,1.45,-5.39,makeMat(0x244f58),false);
+  createPlant(-7,4.6);createPlant(7,4.6);createPlant(-7,-4.8);createPlant(7,-4.8);
+  raycaster=new THREE.Raycaster();pointer=new THREE.Vector2();
+  renderer.domElement.addEventListener('pointerup',onSceneTap);
+  resizeScene();window.addEventListener('resize',resizeScene);
+  animate();loading.classList.add('hide');setTimeout(()=>loading.remove(),500);
 }
-function onSceneTap(event){const rect=renderer.domElement.getBoundingClientRect();pointer.x=((event.clientX-rect.left)/rect.width)*2-1;pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(clickable,false);if(hits.length)openEmployee(hits[0].object.userData.employeeIndex)}
-function resizeScene(){if(!renderer)return;const w=sceneRoot.clientWidth,h=sceneRoot.clientHeight;renderer.setSize(w,h);const aspect=w/h;const frustum=7;camera.left=-frustum*aspect/1.4;camera.right=frustum*aspect/1.4;camera.top=frustum;camera.bottom=-frustum;camera.updateProjectionMatrix()}
+function onSceneTap(event){const rect=renderer.domElement.getBoundingClientRect();pointer.x=((event.clientX-rect.left)/rect.width)*2-1;pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(clickable,false);if(hits.length){const hit=hits[0].object;if(hit.userData.isDirector)openDirector();else openEmployee(hit.userData.employeeIndex)}}
+function resizeScene(){if(!renderer)return;const w=sceneRoot.clientWidth,h=sceneRoot.clientHeight;renderer.setSize(w,h);const aspect=w/h;const frustum=8.2;camera.left=-frustum*aspect/1.4;camera.right=frustum*aspect/1.4;camera.top=frustum;camera.bottom=-frustum;camera.updateProjectionMatrix()}
 function animate(){
   requestAnimationFrame(animate);
   const t=officeClock.getElapsedTime();
   for(const a of employeeAnimations){
-    const wave=t*1.35+a.phase;
-    a.group.position.y=.018+Math.sin(wave)*.018;
-    a.torso.rotation.z=Math.sin(wave*.65)*.018;
-    a.headPivot.rotation.x=Math.sin(wave*.8)*.035;
-    a.arms[0].rotation.x=Math.sin(wave*1.7)*.12-.12;
-    a.arms[1].rotation.x=Math.sin(wave*1.7+1.4)*.12-.12;
-    a.arms[0].rotation.z=-.10+Math.sin(wave*1.1)*.035;
-    a.arms[1].rotation.z=.10-Math.sin(wave*1.1)*.035;
-    a.legs[0].rotation.x=Math.sin(wave*1.7)*.025;
-    a.legs[1].rotation.x=-Math.sin(wave*1.7)*.025;
+    const wave=t*1.45+a.phase;
+    a.group.position.y=Math.sin(wave)*.012;
+    a.torso.rotation.z=Math.sin(wave*.7)*.025;
+    a.headPivot.rotation.x=Math.sin(wave*.8)*.055;
+    a.headPivot.rotation.y=Math.sin(wave*.43)*.09;
+    a.arms[0].rotation.x=-.12+Math.sin(wave*3.1)*.20;
+    a.arms[1].rotation.x=-.12+Math.sin(wave*3.1+1.3)*.20;
+    a.arms[0].rotation.z=-.08+Math.sin(wave*1.2)*.045;
+    a.arms[1].rotation.z=.08-Math.sin(wave*1.2)*.045;
   }
-  for(const m of monitorAnimations)m.material.emissiveIntensity=.38+((Math.sin(t*2+m.phase)+1)*.18);
+  for(const m of monitorAnimations)m.material.emissiveIntensity=.42+((Math.sin(t*2+m.phase)+1)*.22);
   controls?.update();renderer?.render(scene,camera);
 }
 function toast(message){const el=document.querySelector('#toast');el.textContent=message;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1900)}
@@ -138,7 +261,7 @@ function toast(message){const el=document.querySelector('#toast');el.textContent
 renderTeam();renderActivity();
 const now=new Date();document.querySelector('#todayLabel').textContent=now.toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
 document.querySelector('#modalClose').addEventListener('click',closeEmployee);document.querySelector('#employeeModal').addEventListener('click',e=>{if(e.target.id==='employeeModal')closeEmployee()});
-document.querySelector('#resetView').addEventListener('click',()=>{if(!camera)return;camera.position.set(11,14,13);camera.zoom=1;camera.lookAt(0,0,0);camera.updateProjectionMatrix();controls.target.set(0,.2,0);controls.update();toast('Tampilan kantor direset')});
+document.querySelector('#resetView').addEventListener('click',()=>{if(!camera)return;camera.position.set(12,16,14);camera.zoom=1;camera.lookAt(0,0,0);camera.updateProjectionMatrix();controls.target.set(0,.2,0);controls.update();toast('Tampilan kantor direset')});
 document.querySelector('#zoomIn').addEventListener('click',()=>{if(camera){camera.zoom=Math.min(1.65,camera.zoom+.12);camera.updateProjectionMatrix()}});document.querySelector('#zoomOut').addEventListener('click',()=>{if(camera){camera.zoom=Math.max(.7,camera.zoom-.12);camera.updateProjectionMatrix()}});
 document.querySelector('#helpBtn').addEventListener('click',()=>toast('Ketuk karakter untuk membuka profil. Geser denah untuk memutar kantor.'));
 document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));btn.classList.add('active');const target=btn.dataset.target;document.querySelector(target==='top'?'.topbar':target==='office'?'.office-section':target==='team'?'.team-section':'.activity-section').scrollIntoView({behavior:'smooth',block:'start'})}));
