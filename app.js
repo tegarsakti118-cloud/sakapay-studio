@@ -277,6 +277,118 @@ function animate(){
 }
 function toast(message){const el=document.querySelector('#toast');el.textContent=message;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1900)}
 
+
+// FASE 4: local task management engine (no external AI/API connection).
+const taskStoreKey = 'sakapay-ai-office-tasks-v1';
+let officeTasks = [];
+try {
+  const savedTasks = JSON.parse(localStorage.getItem(taskStoreKey) || '[]');
+  officeTasks = Array.isArray(savedTasks) ? savedTasks : [];
+} catch (error) {
+  console.warn('Task storage could not be read:', error);
+}
+let nextTaskId = officeTasks.reduce((max, task) => Math.max(max, Number(task.id) || 0), 0) + 1;
+
+function saveOfficeTasks(){
+  try { localStorage.setItem(taskStoreKey, JSON.stringify(officeTasks)); }
+  catch(error){ toast('Penyimpanan perangkat penuh atau tidak tersedia'); }
+}
+function renderTaskBoard(){
+  const list = document.querySelector('#taskList');
+  const summary = document.querySelector('#taskSummary');
+  if(!list || !summary) return;
+  const counts = {
+    'Menunggu': officeTasks.filter(t=>t.status==='Menunggu').length,
+    'Dikerjakan': officeTasks.filter(t=>t.status==='Dikerjakan').length,
+    'Selesai': officeTasks.filter(t=>t.status==='Selesai').length
+  };
+  summary.innerHTML = `<span>${counts.Menunggu} Menunggu</span><span>${counts.Dikerjakan} Dikerjakan</span><span>${counts.Selesai} Selesai</span>`;
+  if(!officeTasks.length){
+    list.innerHTML = '<div class="task-empty">Belum ada tugas. Berikan tugas pertama kepada tim.</div>';
+    return;
+  }
+  list.innerHTML = officeTasks.slice().sort((a,b)=>b.id-a.id).map(task=>{
+    const person = employees[task.assignee] || employees[0];
+    const nextAction = task.status === 'Menunggu'
+      ? `<button type="button" data-task-action="start" data-task-id="${task.id}">Mulai</button>`
+      : task.status === 'Dikerjakan'
+        ? `<button type="button" data-task-action="done" data-task-id="${task.id}">Selesaikan</button><button type="button" data-task-action="hold" data-task-id="${task.id}" class="quiet">Tunda</button>`
+        : task.status === 'Tertunda'
+          ? `<button type="button" data-task-action="start" data-task-id="${task.id}">Lanjutkan</button>`
+          : '';
+    return `<article class="task-card">
+      <div class="task-card-top"><span class="task-status status-${task.status.toLowerCase()}">${task.status}</span><span class="task-priority priority-${task.priority.toLowerCase()}">${task.priority}</span></div>
+      <strong class="task-title">${escapeTaskText(task.title)}</strong>
+      <div class="task-meta"><span>${person.name} · ${person.role}</span><span>${task.createdAt}</span></div>
+      ${task.result ? `<p class="task-result">${escapeTaskText(task.result)}</p>` : ''}
+      <div class="task-actions">${nextAction}<button type="button" data-task-action="delete" data-task-id="${task.id}" class="delete">Hapus</button></div>
+    </article>`;
+  }).join('');
+}
+function escapeTaskText(value){
+  return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+}
+function updateTaskStatus(id, status){
+  const task = officeTasks.find(item=>item.id===id);
+  if(!task) return;
+  task.status = status;
+  if(status === 'Selesai') task.result = 'Tugas ditandai selesai oleh Direktur. Hasil perlu diperiksa secara manual.';
+  else task.result = '';
+  saveOfficeTasks();
+  renderTaskBoard();
+  const person = employees[task.assignee] || employees[0];
+  logTaskActivity(person.name, person.initials, `Status tugas "${task.title}" diubah menjadi ${status}.`);
+  toast(`Status tugas: ${status}`);
+}
+function logTaskActivity(name, initials, message){
+  const item = {initials, name, message, time:'Baru saja'};
+  const container = document.querySelector('#activityList');
+  if(!container) return;
+  const row = document.createElement('div');
+  row.className = 'activity-item';
+  row.innerHTML = `<div class="activity-symbol">${escapeTaskText(initials)}</div><div class="activity-copy"><strong>${escapeTaskText(name)} · ${escapeTaskText(message)}</strong><small>Aktivitas Task Center lokal</small></div><span class="activity-time">Baru saja</span>`;
+  container.prepend(row);
+}
+document.querySelector('#taskForm')?.addEventListener('submit', event=>{
+  event.preventDefault();
+  const title = document.querySelector('#taskTitle').value.trim();
+  const assignee = Number(document.querySelector('#taskAssignee').value);
+  const priority = document.querySelector('#taskPriority').value;
+  if(!title){ toast('Isi deskripsi tugas terlebih dahulu'); return; }
+  officeTasks.push({
+    id: nextTaskId++,
+    title,
+    assignee,
+    priority,
+    status:'Menunggu',
+    result:'',
+    createdAt:new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+  });
+  saveOfficeTasks();
+  renderTaskBoard();
+  document.querySelector('#taskTitle').value='';
+  const person = employees[assignee] || employees[0];
+  logTaskActivity(person.name, person.initials, `Menerima tugas baru: "${title}".`);
+  toast(`Tugas diberikan kepada ${person.name}`);
+});
+document.querySelector('#taskList')?.addEventListener('click', event=>{
+  const button = event.target.closest('button[data-task-action]');
+  if(!button) return;
+  const id = Number(button.dataset.taskId);
+  const action = button.dataset.taskAction;
+  if(action==='start') updateTaskStatus(id,'Dikerjakan');
+  else if(action==='done') updateTaskStatus(id,'Selesai');
+  else if(action==='hold') updateTaskStatus(id,'Tertunda');
+  else if(action==='delete'){
+    officeTasks = officeTasks.filter(task=>task.id!==id);
+    saveOfficeTasks();
+    renderTaskBoard();
+    toast('Tugas dihapus');
+  }
+});
+renderTaskBoard();
+
+
 renderTeam();renderActivity();
 const now=new Date();document.querySelector('#todayLabel').textContent=now.toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
 document.querySelector('#modalClose').addEventListener('click',closeEmployee);document.querySelector('#employeeModal').addEventListener('click',e=>{if(e.target.id==='employeeModal')closeEmployee()});

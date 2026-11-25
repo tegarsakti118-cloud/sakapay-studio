@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sakapay-ai-office-v6-fase3';
+const CACHE_NAME = 'sakapay-ai-office-v7-fase4-tasks';
 const APP_FILES = ['./', './index.html', './style.css', './app.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', event => {

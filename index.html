@@ -73,12 +73,49 @@
       <div class="team-grid" id="teamGrid"></div>
     </section>
 
+
+    <section class="task-section" id="taskBoard">
+      <div class="section-heading">
+        <div><p class="eyebrow">DIRECTOR WORKSPACE</p><h2>Manajemen Tugas</h2></div>
+        <span class="muted-label">TASK CENTER</span>
+      </div>
+      <form class="task-form" id="taskForm">
+        <label for="taskTitle">Tugas baru</label>
+        <input id="taskTitle" name="taskTitle" maxlength="120" placeholder="Contoh: Buat laporan omzet hari ini" required />
+        <label for="taskAssignee">Tugaskan kepada</label>
+        <select id="taskAssignee" name="taskAssignee">
+          <option value="0">ALDI · Direktur AI</option>
+          <option value="1">YEGI · Kepala Keuangan</option>
+          <option value="2">RIKA · Sekretaris</option>
+          <option value="3">PUTRA · Kepala Operasional</option>
+          <option value="4">MELA · Customer Service</option>
+          <option value="5">ARYA · Teknisi Sistem</option>
+          <option value="6">NONI · Marketing</option>
+          <option value="7">GITA · Analis Bisnis</option>
+        </select>
+        <label for="taskPriority">Prioritas</label>
+        <select id="taskPriority" name="taskPriority">
+          <option value="Normal">Normal</option>
+          <option value="Tinggi">Tinggi</option>
+          <option value="Mendesak">Mendesak</option>
+        </select>
+        <button type="submit" class="task-submit">＋ Berikan Tugas</button>
+      </form>
+      <div class="task-summary" id="taskSummary">
+        <span>0 Menunggu</span><span>0 Dikerjakan</span><span>0 Selesai</span>
+      </div>
+      <div class="task-list" id="taskList">
+        <div class="task-empty">Belum ada tugas. Berikan tugas pertama kepada tim.</div>
+      </div>
+      <p class="task-disclaimer">Task Center FASE 4 · Status dan hasil kerja masih dikelola secara lokal, bukan keluaran AI sungguhan.</p>
+    </section>
+
     <section class="activity-section">
       <div class="section-heading"><div><p class="eyebrow">OFFICE LOG</p><h2>Aktivitas kantor</h2></div><span class="muted-label">SIMULASI LOKAL</span></div>
       <div class="activity-list" id="activityList"></div>
     </section>
 
-    <footer><div class="footer-brand">SAKAPAY <span>AI OFFICE</span></div><p>FASE 3 · INTERAKSI KANTOR</p><small>Pergerakan dan aktivitas tim pada versi ini masih berupa simulasi lokal.</small></footer>
+    <footer><div class="footer-brand">SAKAPAY <span>AI OFFICE</span></div><p>FASE 4 · AI EMPLOYEE TASK CENTER</p><small>Manajemen tugas dan status pekerjaan tersimpan secara lokal di perangkat.</small></footer>
   </main>
 
   <nav class="bottom-nav" aria-label="Navigasi utama">
@@ -96,6 +133,6 @@
     </section>
   </div>
   <div class="toast" id="toast"></div>
-  <script type="module" src="app.js?v=4"></script>
+  <script type="module" src="app.js?v=5"></script>
 </body>
 </html>
