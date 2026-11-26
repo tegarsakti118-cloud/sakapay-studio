@@ -74,6 +74,28 @@
     </section>
 
 
+    <section class="office-integration-section" id="websiteOrders">
+      <div class="section-heading">
+        <div><p class="eyebrow">SAKAPAY WEBSITE</p><h2>Pesanan Website</h2></div>
+        <span class="muted-label">GATEWAY BACA-SAJА</span>
+      </div>
+      <p class="office-integration-note">Login menggunakan akun admin Supabase SakaPay. Sesi ini digunakan oleh AI Office untuk meminta daftar pesanan. Tidak ada akses untuk mengubah transaksi.</p>
+      <div id="integrationStatus" class="integration-status" role="status">Memeriksa sesi…</div>
+      <div id="officeLoginPanel" class="office-login-panel" hidden>
+        <form id="officeLoginForm" class="office-login-form">
+          <label for="officeEmail">Email admin</label>
+          <input id="officeEmail" type="email" autocomplete="username" required placeholder="Email akun admin" />
+          <label for="officePassword">Password</label>
+          <input id="officePassword" type="password" autocomplete="current-password" required placeholder="Password akun admin" />
+          <button type="submit">Login & Hubungkan</button>
+        </form>
+      </div>
+      <div id="officeOrdersPanel" hidden>
+        <div class="office-orders-toolbar"><strong>Daftar pesanan terbaru</strong><div><button type="button" id="refreshOfficeOrders">↻ Muat ulang</button><button type="button" id="officeLogout" class="office-logout">Keluar</button></div></div>
+        <div id="officeOrdersList" class="office-orders-list"><div class="office-order-empty">Belum dimuat.</div></div>
+      </div>
+    </section>
+
     <section class="task-section" id="taskBoard">
       <div class="section-heading">
         <div><p class="eyebrow">DIRECTOR WORKSPACE</p><h2>Manajemen Tugas</h2></div>
@@ -134,5 +156,6 @@
   </div>
   <div class="toast" id="toast"></div>
   <script type="module" src="app.js?v=5"></script>
+  <script type="module" src="office-integration.js?v=1"></script>
 </body>
 </html>

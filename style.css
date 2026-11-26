@@ -39,3 +39,27 @@
 .task-empty{padding:20px;text-align:center;border:1px dashed #40536a;border-radius:12px;color:#91a5bc;font-size:11px}
 .task-disclaimer{font-size:9px;line-height:1.5;color:#71869f;margin:10px 2px 0}
 @media(min-width:700px){.task-form{grid-template-columns:1fr 1fr;align-items:end}.task-form label{align-self:end}.task-form input{grid-column:1/-1}.task-form label[for="taskAssignee"]{grid-column:1}.task-form label[for="taskPriority"]{grid-column:2}.task-form select{min-width:0}.task-submit{grid-column:1/-1}}
+
+/* FASE 5A: read-only website order integration */
+.office-integration-section{margin:24px 0;padding:18px;border:1px solid #dce5ed;border-radius:18px;background:#fff}
+.office-integration-note{color:#64748b;font-size:.9rem;line-height:1.55;margin:8px 0 14px}
+.integration-status{padding:11px 13px;border-radius:11px;background:#f1f5f9;color:#334155;font-size:.88rem;margin:12px 0}
+.integration-status[data-state="success"]{background:#ecfdf5;color:#047857}
+.integration-status[data-state="error"]{background:#fef2f2;color:#b91c1c}
+.office-login-form{display:grid;gap:9px;max-width:460px}
+.office-login-form label{font-size:.85rem;font-weight:650;color:#334155}
+.office-login-form input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font:inherit}
+.office-login-form button,.office-orders-toolbar button{border:0;border-radius:10px;padding:11px 14px;background:#168f85;color:white;font-weight:650}
+.office-login-form button:disabled,.office-orders-toolbar button:disabled{opacity:.55}
+.office-orders-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:16px 0}
+.office-orders-toolbar>div{display:flex;gap:8px}
+.office-orders-toolbar .office-logout{background:#e2e8f0;color:#334155}
+.office-orders-list{display:grid;gap:10px}
+.office-order-card{padding:13px;border:1px solid #e2e8f0;border-radius:13px;background:#f8fafc;min-width:0}
+.office-order-head,.office-order-foot{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.office-order-head strong{overflow-wrap:anywhere;color:#0f172a}
+.office-order-head span{font-size:.75rem;padding:4px 8px;border-radius:99px;background:#e0f2fe;color:#075985;white-space:nowrap}
+.office-order-meta{font-size:.82rem;color:#64748b;margin-top:6px;overflow-wrap:anywhere}
+.office-order-foot{margin-top:10px;align-items:center;color:#0f766e;font-weight:700}
+.office-order-foot small{font-size:.72rem;color:#64748b;font-weight:400;text-align:right}
+.office-order-empty{padding:18px;text-align:center;color:#64748b;background:#f8fafc;border-radius:12px}
