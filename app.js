@@ -280,7 +280,10 @@ function toast(message){const el=document.querySelector('#toast');el.textContent
 
 // FASE 4: local task management engine (no external AI/API connection).
 const taskStoreKey = 'sakapay-ai-office-tasks-v1';
+const orderTaskMapKey = 'sakapay-ai-office-order-task-map-v1';
 let officeTasks = [];
+let orderTaskMap = {};
+try { orderTaskMap = JSON.parse(localStorage.getItem(orderTaskMapKey) || '{}') || {}; } catch { orderTaskMap = {}; }
 try {
   const savedTasks = JSON.parse(localStorage.getItem(taskStoreKey) || '[]');
   officeTasks = Array.isArray(savedTasks) ? savedTasks : [];
@@ -293,6 +296,42 @@ function saveOfficeTasks(){
   try { localStorage.setItem(taskStoreKey, JSON.stringify(officeTasks)); }
   catch(error){ toast('Penyimpanan perangkat penuh atau tidak tersedia'); }
 }
+function saveOrderTaskMap(){
+  try { localStorage.setItem(orderTaskMapKey, JSON.stringify(orderTaskMap)); }
+  catch(error){ toast('Penyimpanan perangkat penuh atau tidak tersedia'); }
+}
+function syncWebsiteOrders(orders){
+  let created = 0;
+  let updated = 0;
+  (Array.isArray(orders) ? orders : []).forEach(order => {
+    const orderId = String(order?.id ?? '').trim();
+    if (!orderId) return;
+    const rawStatus = String(order.status || 'Menunggu Pembayaran');
+    const normalized = rawStatus.toLowerCase();
+    const taskStatus = normalized.includes('selesai') ? 'Selesai' : normalized.includes('diproses') ? 'Dikerjakan' : 'Menunggu';
+    const title = `Pesanan website: ${String(order.produk || 'Produk').slice(0, 70)} · ${orderId}`;
+    const existingId = orderTaskMap[orderId];
+    const existing = existingId ? officeTasks.find(task => task.id === existingId) : null;
+    if (existing) {
+      if (existing.status !== 'Selesai' && taskStatus !== existing.status) {
+        existing.status = taskStatus;
+        existing.result = `Status dari website: ${rawStatus}. Data dibaca otomatis, tindakan transaksi tetap manual.`;
+        updated++;
+      }
+      existing.orderStatus = rawStatus;
+      return;
+    }
+    const task = { id: nextTaskId++, title, assignee: 3, priority: taskStatus === 'Dikerjakan' ? 'Tinggi' : 'Normal', status: taskStatus, result: `Order ${orderId} · ${rawStatus}. PUTRA memantau; tidak ada top-up atau perubahan transaksi otomatis.`, createdAt: new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}), source: 'website', orderId, orderStatus: rawStatus };
+    officeTasks.push(task); orderTaskMap[orderId] = task.id; created++;
+  });
+  if (created || updated) {
+    saveOfficeTasks(); saveOrderTaskMap(); renderTaskBoard();
+    if (created) logTaskActivity('PUTRA','PU',`${created} tugas pesanan website dibuat otomatis.`);
+    if (updated) logTaskActivity('ALDI','AL',`${updated} status tugas pesanan disinkronkan dari website.`);
+  }
+  return { created, updated };
+}
+window.SakaOfficeTasks = { syncWebsiteOrders };
 function renderTaskBoard(){
   const list = document.querySelector('#taskList');
   const summary = document.querySelector('#taskSummary');
@@ -320,6 +359,7 @@ function renderTaskBoard(){
       <div class="task-card-top"><span class="task-status status-${task.status.toLowerCase()}">${task.status}</span><span class="task-priority priority-${task.priority.toLowerCase()}">${task.priority}</span></div>
       <strong class="task-title">${escapeTaskText(task.title)}</strong>
       <div class="task-meta"><span>${person.name} · ${person.role}</span><span>${task.createdAt}</span></div>
+      ${task.source === 'website' ? `<p class="task-result">Sumber: Website · Order ${escapeTaskText(task.orderId)}</p>` : ''}
       ${task.result ? `<p class="task-result">${escapeTaskText(task.result)}</p>` : ''}
       <div class="task-actions">${nextAction}<button type="button" data-task-action="delete" data-task-id="${task.id}" class="delete">Hapus</button></div>
     </article>`;
@@ -346,7 +386,7 @@ function logTaskActivity(name, initials, message){
   if(!container) return;
   const row = document.createElement('div');
   row.className = 'activity-item';
-  row.innerHTML = `<div class="activity-symbol">${escapeTaskText(initials)}</div><div class="activity-copy"><strong>${escapeTaskText(name)} · ${escapeTaskText(message)}</strong><small>Aktivitas Task Center lokal</small></div><span class="activity-time">Baru saja</span>`;
+  row.innerHTML = `<div class="activity-symbol">${escapeTaskText(initials)}</div><div class="activity-copy"><strong>${escapeTaskText(name)} · ${escapeTaskText(message)}</strong><small>Catatan aktivitas kantor</small></div><span class="activity-time">Baru saja</span>`;
   container.prepend(row);
 }
 document.querySelector('#taskForm')?.addEventListener('submit', event=>{
