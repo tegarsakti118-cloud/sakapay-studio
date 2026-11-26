@@ -331,7 +331,71 @@ function syncWebsiteOrders(orders){
   }
   return { created, updated };
 }
-window.SakaOfficeTasks = { syncWebsiteOrders };
+const coordinationMapKey = 'sakapay-ai-office-coordination-map-v1';
+let coordinationMap = {};
+try { coordinationMap = JSON.parse(localStorage.getItem(coordinationMapKey) || '{}') || {}; } catch { coordinationMap = {}; }
+function saveCoordinationMap(){
+  try { localStorage.setItem(coordinationMapKey, JSON.stringify(coordinationMap)); }
+  catch(error){ toast('Penyimpanan koordinasi tidak tersedia'); }
+}
+function runAldiCoordination(){
+  const sourceTasks = officeTasks.filter(task => task.source === 'website' && task.orderId);
+  if (!sourceTasks.length) {
+    const summary = document.querySelector('#coordinationSummary');
+    if (summary) summary.textContent = 'Belum ada pesanan website untuk dikoordinasikan.';
+    toast('Belum ada pesanan website');
+    return;
+  }
+  let created = 0;
+  let skipped = 0;
+  sourceTasks.forEach(sourceTask => {
+    const orderId = String(sourceTask.orderId);
+    const raw = String(sourceTask.orderStatus || '').toLowerCase();
+    let plan = [];
+    if (raw.includes('menunggu')) {
+      plan = [
+        { key:'customer-draft', assignee:4, title:`Siapkan draf tindak lanjut pelanggan · ${orderId}`, detail:`MELA: siapkan draf pesan yang sopan untuk order ${orderId}. Jangan kirim pesan otomatis; direktur harus memeriksa dan mengirimnya.` },
+        { key:'admin-log', assignee:2, title:`Catat status pesanan untuk tindak lanjut · ${orderId}`, detail:`RIKA: catat status website “${sourceTask.orderStatus}” dan siapkan catatan tindak lanjut. Jangan menyimpulkan pembayaran sudah diterima.` }
+      ];
+    } else if (raw.includes('diproses') || raw.includes('proses')) {
+      plan = [
+        { key:'finance-review', assignee:1, title:`Tinjau catatan order yang sedang diproses · ${orderId}`, detail:`YEGI: tinjau informasi order ${orderId} dan tandai hal yang perlu diperiksa direktur. Jangan mengubah saldo atau transaksi.` },
+        { key:'ops-log', assignee:2, title:`Catat perkembangan operasional · ${orderId}`, detail:`RIKA: dokumentasikan status website “${sourceTask.orderStatus}” untuk order ${orderId}.` }
+      ];
+    } else if (raw.includes('selesai')) {
+      plan = [
+        { key:'completion-record', assignee:2, title:`Arsipkan catatan penyelesaian order · ${orderId}`, detail:`RIKA: catat bahwa website menampilkan status “${sourceTask.orderStatus}”. Ini hanya pencatatan status, bukan verifikasi independen top-up.` }
+      ];
+    } else {
+      plan = [
+        { key:'status-review', assignee:0, title:`Tinjau status pesanan website · ${orderId}`, detail:`ALDI: minta direktur meninjau status “${sourceTask.orderStatus || 'Tidak diketahui'}” untuk order ${orderId}.` }
+      ];
+    }
+    plan.forEach(item => {
+      const key = `${orderId}:${item.key}`;
+      if (coordinationMap[key]) { skipped++; return; }
+      const task = {
+        id: nextTaskId++, title: item.title, assignee: item.assignee,
+        priority: raw.includes('menunggu') ? 'Tinggi' : 'Normal',
+        status: 'Menunggu', result: item.detail,
+        createdAt: new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}),
+        source: 'aldi-coordination', orderId, parentOrderTaskId: sourceTask.id
+      };
+      officeTasks.push(task);
+      coordinationMap[key] = task.id;
+      created++;
+    });
+  });
+  if (created) {
+    saveOfficeTasks(); saveCoordinationMap(); renderTaskBoard();
+    logTaskActivity('ALDI','AL',`${created} tugas tindak lanjut dibuat dari ${sourceTasks.length} pesanan website.`);
+  }
+  const summary = document.querySelector('#coordinationSummary');
+  if (summary) summary.textContent = `${created} tugas baru dibuat · ${skipped} tugas dilewati karena sudah pernah dibuat · ${sourceTasks.length} pesanan diperiksa.`;
+  toast(created ? `${created} tugas koordinasi dibuat` : 'Tidak ada tugas baru untuk dibuat');
+}
+document.querySelector('#runCoordination')?.addEventListener('click', runAldiCoordination);
+window.SakaOfficeTasks = { syncWebsiteOrders, runAldiCoordination };
 function renderTaskBoard(){
   const list = document.querySelector('#taskList');
   const summary = document.querySelector('#taskSummary');
@@ -359,7 +423,7 @@ function renderTaskBoard(){
       <div class="task-card-top"><span class="task-status status-${task.status.toLowerCase()}">${task.status}</span><span class="task-priority priority-${task.priority.toLowerCase()}">${task.priority}</span></div>
       <strong class="task-title">${escapeTaskText(task.title)}</strong>
       <div class="task-meta"><span>${person.name} · ${person.role}</span><span>${task.createdAt}</span></div>
-      ${task.source === 'website' ? `<p class="task-result">Sumber: Website · Order ${escapeTaskText(task.orderId)}</p>` : ''}
+      ${task.orderId ? `<p class="task-result">Sumber: ${task.source === 'website' ? 'Website' : 'Koordinasi ALDI'} · Order ${escapeTaskText(task.orderId)}</p>` : ''}
       ${task.result ? `<p class="task-result">${escapeTaskText(task.result)}</p>` : ''}
       <div class="task-actions">${nextAction}<button type="button" data-task-action="delete" data-task-id="${task.id}" class="delete">Hapus</button></div>
     </article>`;

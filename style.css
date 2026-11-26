@@ -63,3 +63,13 @@
 .office-order-foot{margin-top:10px;align-items:center;color:#0f766e;font-weight:700}
 .office-order-foot small{font-size:.72rem;color:#64748b;font-weight:400;text-align:right}
 .office-order-empty{padding:18px;text-align:center;color:#64748b;background:#f8fafc;border-radius:12px}
+
+/* FASE 5C · ALDI coordination panel */
+.coordination-panel{margin-top:14px;padding:15px;background:linear-gradient(145deg,#162b3b,#10202f);border:1px solid #31536a;border-radius:15px}
+.coordination-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.coordination-head h3{margin:4px 0 0;font:800 15px Manrope,sans-serif;color:#eef7ff}
+.coordination-mode{font-size:8px;font-weight:800;letter-spacing:1px;color:#8de0ce;border:1px solid #356b65;border-radius:20px;padding:6px 8px;white-space:nowrap}
+.coordination-copy{font-size:10px;line-height:1.6;color:#a9bdd0;margin:10px 0}
+.coordination-summary{padding:9px 10px;border-radius:9px;background:#0c1b29;color:#b8d5d1;font-size:10px;line-height:1.5;margin-bottom:9px}
+.coordination-button{width:100%;min-height:43px;border:0;border-radius:10px;background:#168f85;color:white;font:800 11px 'DM Sans',sans-serif}
+.coordination-button:active{transform:scale(.99)}
