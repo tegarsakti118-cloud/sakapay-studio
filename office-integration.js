@@ -383,10 +383,7 @@ async function syncSession() {
   } = await supabase.auth.getSession();
 
   currentSession = session;
-
-  console.log('OFFICE LOGIN UID:', session?.user?.id);
-  if (session) alert('UID LOGIN: ' + session.user.id);
-
+  
   loginPanel.hidden = !!session;
   ordersPanel.hidden = !session;
 

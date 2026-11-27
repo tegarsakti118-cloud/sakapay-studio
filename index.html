@@ -101,7 +101,7 @@
         Login ke AI Office
       </button>
 
-      <p id="integrationStatus" role="status">
+      <p id="integrationLoginStatus" role="status">
         Silakan login menggunakan akun admin.
       </p>
     </form>
@@ -177,6 +177,59 @@
       <div id="yegiResults" class="yegi-results"></div>
     </div>
   </section>
+
+  
+<!-- TASK CENTER -->
+<section class="task-section" id="taskCenter">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">OFFICE OPERATIONS</p>
+      <h2>Task Center</h2>
+      <p class="subheading">Pantau dan kelola tugas seluruh personel AI.</p>
+    </div>
+  </div>
+
+  <form id="taskForm" class="task-form">
+    <label for="taskTitle">Tugas baru</label>
+    <input id="taskTitle" type="text" maxlength="120"
+      placeholder="Contoh: Periksa laporan transaksi hari ini" required>
+
+    <label for="taskAssignee">Tugaskan kepada</label>
+    <select id="taskAssignee">
+      <option value="0">ALDI</option>
+      <option value="1">YEGI</option>
+      <option value="2">RIKA</option>
+      <option value="3">PUTRA</option>
+      <option value="4">MELA</option>
+      <option value="5">ARYA</option>
+      <option value="6">NONI</option>
+      <option value="7">GITA</option>
+    </select>
+
+    <label for="taskPriority">Prioritas</label>
+    <select id="taskPriority">
+      <option value="Normal">Normal</option>
+      <option value="Tinggi">Tinggi</option>
+      <option value="Mendesak">Mendesak</option>
+      <option value="Rendah">Rendah</option>
+    </select>
+
+    <button class="task-submit" type="submit">＋ Berikan Tugas</button>
+  </form>
+
+  <div id="taskSummary" class="task-summary">
+    <span>Memuat tugas...</span>
+  </div>
+
+  <div id="taskList" class="task-list">
+    <div class="task-empty">Menghubungkan ke database...</div>
+  </div>
+
+  <p class="task-disclaimer">
+    Task Center menggunakan Supabase Project A sebagai database bersama.
+  </p>
+</section>
+
 
   <!-- VIRTUAL OFFICE 3D -->
   <section class="office-section" id="office">
