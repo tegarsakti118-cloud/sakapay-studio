@@ -384,11 +384,17 @@ async function syncSession() {
 
   currentSession = session;
 
+  console.log('OFFICE LOGIN UID:', session?.user?.id);
+
   loginPanel.hidden = !!session;
   ordersPanel.hidden = !session;
 
   if (session) {
-    setStatus(`Login sebagai ${session.user.email}.`);
+    setStatus(
+  session.user.id === '12c32d56-f060-4295-898a-5c130444aa07'
+    ? 'UID ADMIN COCOK ✓'
+    : 'UID ADMIN TIDAK COCOK ✗'
+);
     await loadOrders();
     startPolling();
   } else {
