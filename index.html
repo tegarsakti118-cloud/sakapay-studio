@@ -1,170 +1,306 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#101b2b" />
-  <meta name="description" content="SakaPay AI Office - kantor virtual untuk mengelola bisnis SakaPay." />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101b2b">
+  <meta name="description" content="SakaPay AI Office">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+
   <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
-      }
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
     }
+  }
   </script>
+
   <title>SakaPay AI Office</title>
 </head>
+
 <body>
-  <main class="app-shell">
-    <header class="topbar">
-      <div class="brand-lockup">
-        <div class="brand-mark">S</div>
-        <div><strong>SakaPay <span>AI Office</span></strong><small>VIRTUAL HEADQUARTERS</small></div>
-      </div>
-      <div class="top-actions">
-        <div class="live-pill"><i></i> OFFICE ONLINE</div>
-        <button class="icon-btn" id="installBtn" hidden aria-label="Install aplikasi">＋</button>
-        <button class="icon-btn" id="helpBtn" aria-label="Bantuan">?</button>
-      </div>
-    </header>
+<main class="app-shell">
 
-    <section class="welcome-row">
+  <header class="topbar">
+    <div class="brand-lockup">
+      <div class="brand-mark">S</div>
       <div>
-        <p class="eyebrow">SELAMAT DATANG, DIREKTUR</p>
-        <h1>Ruang kendali <span>SakaPay.</span></h1>
-        <p class="subheading">Pantau tim dan aktivitas kantor dari satu tempat.</p>
+        <strong>SakaPay <span>AI Office</span></strong>
+        <small>VIRTUAL HEADQUARTERS</small>
       </div>
-      <div class="date-chip"><span class="date-dot"></span><span id="todayLabel">MEMUAT TANGGAL</span></div>
-    </section>
+    </div>
 
-    <section class="stats-grid" aria-label="Ringkasan kantor">
-      <article class="stat-card"><div class="stat-icon blue">♙</div><div><small>PERSONEL</small><strong>08 <em>AI + direktur</em></strong></div></article>
-      <article class="stat-card"><div class="stat-icon green">◉</div><div><small>STATUS KANTOR</small><strong>Aktif</strong></div></article>
-      <article class="stat-card"><div class="stat-icon amber">▤</div><div><small>RUANG KERJA</small><strong>04 <em>area</em></strong></div></article>
-    </section>
+    <div class="top-actions">
+      <div class="live-pill"><i></i> OFFICE ONLINE</div>
+      <button class="icon-btn" id="installBtn" hidden>＋</button>
+      <button class="icon-btn" id="helpBtn">?</button>
+    </div>
+  </header>
 
-    <section class="office-section">
-      <div class="section-heading">
-        <div><p class="eyebrow">VIRTUAL WORKSPACE</p><h2>Virtual Office 3D</h2></div>
-        <div class="view-controls">
-          <button id="resetView" class="soft-btn">↺ <span>Reset</span></button>
-          <button id="zoomIn" class="soft-btn" aria-label="Perbesar">＋</button>
-          <button id="zoomOut" class="soft-btn" aria-label="Perkecil">−</button>
-        </div>
-      </div>
-      <div class="scene-frame">
-        <div id="scene" role="img" aria-label="Kantor 3D isometric SakaPay. Sentuh karyawan untuk melihat profil."></div>
-        <div class="scene-overlay"><span class="scene-live"><i></i> LIVE VIEW</span><span class="scene-hint">Geser untuk memutar · cubit untuk zoom</span></div>
-        <div class="scene-loading" id="sceneLoading"><div class="loader"></div><span>Menyiapkan kantor 3D...</span></div>
-      </div>
-      <p class="scene-caption"><span>●</span> Ketuk ALDI–GITA untuk melihat profil. Avatar DIREKTUR mewakili pemilik SakaPay.</p>
-      <div class="meeting-controls" style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0">
-        <button type="button" id="meetingBtn" style="border:0;border-radius:12px;padding:12px 15px;background:#168f85;color:white;font-weight:600">▣ Panggil Tim ke Rapat</button>
-        <button type="button" id="returnBtn" style="border:0;border-radius:12px;padding:12px 15px;background:#e9dfcf;color:#463b30;font-weight:600">↩ Kembali ke Meja</button>
-      </div>
-    </section>
+  <section class="welcome-row" id="top">
+    <div>
+      <p class="eyebrow">SELAMAT DATANG, DIREKTUR</p>
+      <h1>Ruang kendali <span>SakaPay.</span></h1>
+      <p class="subheading">Pantau tim dan aktivitas kantor dari satu tempat.</p>
+    </div>
+    <div class="date-chip">
+      <span class="date-dot"></span>
+      <span id="todayLabel">MEMUAT TANGGAL</span>
+    </div>
+  </section>
 
-    <section class="team-section">
-      <div class="section-heading"><div><p class="eyebrow">OUR PEOPLE</p><h2>Tim SakaPay</h2></div><span class="team-count">08 AI + 01 DIREKTUR</span></div>
-      <div class="team-grid" id="teamGrid"></div>
-    </section>
+  <section class="stats-grid">
+    <article class="stat-card">
+      <div class="stat-icon blue">♙</div>
+      <div><small>PERSONEL</small><strong>08 <em>AI + direktur</em></strong></div>
+    </article>
 
+    <article class="stat-card">
+      <div class="stat-icon green">◉</div>
+      <div><small>STATUS KANTOR</small><strong>Aktif</strong></div>
+    </article>
 
-    <section class="office-integration-section" id="websiteOrders">
-      <div class="section-heading">
-        <div><p class="eyebrow">SAKAPAY WEBSITE</p><h2>Pesanan Website</h2></div>
-        <span class="muted-label">GATEWAY BACA-SAJА</span>
-      </div>
-      <p class="office-integration-note">Login menggunakan akun admin Supabase SakaPay. Sesi ini digunakan oleh AI Office untuk meminta daftar pesanan. Tidak ada akses untuk mengubah transaksi.</p>
-      <div id="integrationStatus" class="integration-status" role="status">Memeriksa sesi…</div>
-      <div id="officeLoginPanel" class="office-login-panel" hidden>
-        <form id="officeLoginForm" class="office-login-form">
-          <label for="officeEmail">Email admin</label>
-          <input id="officeEmail" type="email" autocomplete="username" required placeholder="Email akun admin" />
-          <label for="officePassword">Password</label>
-          <input id="officePassword" type="password" autocomplete="current-password" required placeholder="Password akun admin" />
-          <button type="submit">Login & Hubungkan</button>
-        </form>
-      </div>
-      <div id="officeOrdersPanel" hidden>
-        <div class="office-orders-toolbar"><strong>Daftar pesanan terbaru</strong><div><button type="button" id="refreshOfficeOrders">↻ Muat ulang</button><button type="button" id="officeLogout" class="office-logout">Keluar</button></div></div>
-        <div id="officeOrdersList" class="office-orders-list"><div class="office-order-empty">Belum dimuat.</div></div>
-      </div>
-    </section>
+    <article class="stat-card">
+      <div class="stat-icon amber">▤</div>
+      <div><small>RUANG KERJA</small><strong>04 <em>area</em></strong></div>
+    </article>
+  </section>
 
-    <section class="task-section" id="taskBoard">
-      <div class="section-heading">
-        <div><p class="eyebrow">DIRECTOR WORKSPACE</p><h2>Manajemen Tugas</h2></div>
-        <span class="muted-label">TASK CENTER</span>
+  <!-- ADMIN LOGIN -->
+  <section class="office-section" id="officeLoginPanel" hidden>
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">SECURE ACCESS</p>
+        <h2>Login Admin</h2>
       </div>
-      <form class="task-form" id="taskForm">
-        <label for="taskTitle">Tugas baru</label>
-        <input id="taskTitle" name="taskTitle" maxlength="120" placeholder="Contoh: Buat laporan omzet hari ini" required />
-        <label for="taskAssignee">Tugaskan kepada</label>
-        <select id="taskAssignee" name="taskAssignee">
-          <option value="0">ALDI · Direktur AI</option>
-          <option value="1">YEGI · Kepala Keuangan</option>
-          <option value="2">RIKA · Sekretaris</option>
-          <option value="3">PUTRA · Kepala Operasional</option>
-          <option value="4">MELA · Customer Service</option>
-          <option value="5">ARYA · Teknisi Sistem</option>
-          <option value="6">NONI · Marketing</option>
-          <option value="7">GITA · Analis Bisnis</option>
-        </select>
-        <label for="taskPriority">Prioritas</label>
-        <select id="taskPriority" name="taskPriority">
-          <option value="Normal">Normal</option>
-          <option value="Tinggi">Tinggi</option>
-          <option value="Mendesak">Mendesak</option>
-        </select>
-        <button type="submit" class="task-submit">＋ Berikan Tugas</button>
-      </form>
-      <div class="task-summary" id="taskSummary">
-        <span>0 Menunggu</span><span>0 Dikerjakan</span><span>0 Selesai</span>
+    </div>
+
+    <form id="officeLoginForm" class="integration-panel">
+      <label for="officeEmail">Email admin</label>
+      <input
+        type="email"
+        id="officeEmail"
+        placeholder="Email admin SakaPay"
+        autocomplete="username"
+        required
+      >
+
+      <label for="officePassword">Password</label>
+      <input
+        type="password"
+        id="officePassword"
+        placeholder="Password"
+        autocomplete="current-password"
+        required
+      >
+
+      <button type="submit" class="primary-action">
+        Login ke AI Office
+      </button>
+
+      <p id="integrationStatus" role="status">
+        Silakan login menggunakan akun admin.
+      </p>
+    </form>
+  </section>
+
+  <!-- WEBSITE ORDER CENTER -->
+  <section class="office-section" id="officeOrdersPanel" hidden>
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">WEBSITE OPERATIONS</p>
+        <h2>Order Center</h2>
       </div>
-      <div class="task-list" id="taskList">
-        <div class="task-empty">Belum ada tugas. Berikan tugas pertama kepada tim.</div>
+      <button id="officeLogout" class="soft-btn">Logout</button>
+    </div>
+
+    <div class="integration-panel">
+      <div class="panel-heading">
+        <strong>Pesanan Website SakaPay</strong>
+        <button id="refreshOfficeOrders" class="soft-btn">
+          ↻ Refresh
+        </button>
       </div>
-      <section class="coordination-panel" aria-labelledby="coordinationTitle">
-        <div class="coordination-head">
-          <div><p class="eyebrow">ALDI · OPERATIONS COORDINATOR</p><h3 id="coordinationTitle">Koordinasi operasional</h3></div>
-          <span class="coordination-mode">BERBASIS ATURAN</span>
-        </div>
-        <p class="coordination-copy">ALDI menyusun tugas tindak lanjut dari pesanan website yang sudah diterima PUTRA. Tidak mengirim pesan, mengubah pesanan, atau menjalankan top-up.</p>
-        <div class="coordination-summary" id="coordinationSummary">Otomatis aktif setelah PUTRA menyinkronkan pesanan.</div>
-        <button type="button" class="coordination-button" id="runCoordination">Jalankan Ulang Koordinasi</button>
-      </section>
-      <p class="task-disclaimer">Task Center FASE 5E.4 · Data tugas tersimpan di Supabase Project A. Koordinasi pesanan dijalankan backend; tindakan transaksi tetap manual.</p>
-    </section>
 
-    <section class="activity-section">
-      <div class="section-heading"><div><p class="eyebrow">OFFICE LOG</p><h2>Aktivitas kantor</h2></div><span class="muted-label">LOG KANTOR</span></div>
-      <div class="activity-list" id="activityList"></div>
-    </section>
+      <p id="integrationStatus" role="status">
+        Menunggu koneksi...
+      </p>
 
-    <footer><div class="footer-brand">SAKAPAY <span>AI OFFICE</span></div><p>FASE 5E · AI EMPLOYEE TASK CENTER</p><small>Manajemen tugas bersama tersimpan di Supabase Project A.</small></footer>
-  </main>
+      <div id="officeOrdersList">
+        <div class="office-order-empty">Memuat pesanan...</div>
+      </div>
+    </div>
+  </section>
 
-  <nav class="bottom-nav" aria-label="Navigasi utama">
-    <button class="nav-item active" data-target="top"><b>⌂</b><span>Beranda</span></button>
-    <button class="nav-item" data-target="office"><b>▦</b><span>Kantor</span></button>
-    <button class="nav-item" data-target="team"><b>♙</b><span>Tim</span></button>
-    <button class="nav-item" data-target="activity"><b>☷</b><span>Aktivitas</span></button>
-  </nav>
-  <div class="modal-backdrop" id="employeeModal" role="dialog" aria-modal="true" aria-label="Profil karyawan">
-    <section class="employee-modal">
-      <div class="modal-top"><span class="detail-label">PROFIL PERSONEL</span><button class="modal-close" id="modalClose" aria-label="Tutup">×</button></div>
-      <div class="modal-person"><div class="modal-avatar" id="modalInitials">AL</div><div><h3 id="modalName">ALDI</h3><p id="modalRole">Direktur AI</p></div></div>
-      <div class="detail-label">TENTANG PEGAWAI</div><p class="detail-text" id="modalAbout"></p>
-      <div class="task-box"><strong>◈ TUGAS SAAT INI</strong><p id="modalTask"></p></div>
-    </section>
-  </div>
-  <div class="toast" id="toast"></div>
-  <script type="module" src="app.js?v=8"></script>
-  <script type="module" src="office-integration.js?v=4"></script>
+  <!-- YEGI PPOB DASHBOARD -->
+  <section class="office-section" id="yegiSection">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">FINANCE INTELLIGENCE</p>
+        <h2>YEGI · PPOB Center</h2>
+        <p class="subheading">Pemantauan data keuangan Project B.</p>
+      </div>
+    </div>
+
+    <div class="integration-panel">
+      <div class="panel-heading">
+        <strong>Data PPOB</strong>
+        <span class="team-count">READ ONLY</span>
+      </div>
+
+      <p id="yegiStatus" role="status">
+        Menunggu login admin.
+      </p>
+
+      <div class="yegi-actions">
+        <button id="yegiLoadSummary" class="primary-action">
+          Ringkasan Keuangan
+        </button>
+
+        <button id="yegiLoadTransactions" class="soft-btn">
+          Transaksi Terbaru
+        </button>
+
+        <button id="yegiLoadProducts" class="soft-btn">
+          Daftar Produk
+        </button>
+
+        <button id="yegiLoadGames" class="soft-btn">
+          Daftar Game
+        </button>
+      </div>
+
+      <div id="yegiSummary" class="yegi-summary"></div>
+      <div id="yegiResults" class="yegi-results"></div>
+    </div>
+  </section>
+
+  <!-- VIRTUAL OFFICE 3D -->
+  <section class="office-section" id="office">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">VIRTUAL WORKSPACE</p>
+        <h2>Virtual Office 3D</h2>
+      </div>
+
+      <div class="view-controls">
+        <button id="resetView" class="soft-btn">↺ Reset</button>
+        <button id="zoomIn" class="soft-btn">＋</button>
+        <button id="zoomOut" class="soft-btn">−</button>
+      </div>
+    </div>
+
+    <div class="scene-frame">
+      <div id="scene" role="img"
+        aria-label="Kantor 3D SakaPay">
+      </div>
+
+      <div class="scene-overlay">
+        <span class="scene-live"><i></i> LIVE VIEW</span>
+        <span class="scene-hint">Geser untuk memutar · cubit untuk zoom</span>
+      </div>
+
+      <div class="scene-loading" id="sceneLoading">
+        <div class="loader"></div>
+        <span>Menyiapkan kantor 3D...</span>
+      </div>
+    </div>
+
+    <p class="scene-caption">
+      <span>●</span>
+      Ketuk ALDI–GITA untuk melihat profil karyawan.
+    </p>
+
+    <div class="meeting-controls">
+      <button id="meetingBtn">▣ Panggil Tim ke Rapat</button>
+      <button id="returnBtn">↩ Kembali ke Meja</button>
+    </div>
+  </section>
+
+  <!-- TEAM -->
+  <section class="team-section" id="team">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">OUR PEOPLE</p>
+        <h2>Tim SakaPay</h2>
+      </div>
+      <span class="team-count">08 AI + 01 DIREKTUR</span>
+    </div>
+
+    <div class="team-grid" id="teamGrid"></div>
+  </section>
+
+  <!-- ACTIVITY -->
+  <section class="activity-section" id="activity">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">OFFICE LOG</p>
+        <h2>Aktivitas Kantor</h2>
+      </div>
+      <span class="muted-label">OFFICE ACTIVITY</span>
+    </div>
+
+    <div class="activity-list" id="activityList"></div>
+  </section>
+
+  <footer>
+    <div class="footer-brand">SAKAPAY <span>AI OFFICE</span></div>
+    <p>AI BUSINESS MANAGEMENT SYSTEM</p>
+    <small>Virtual Office · Operations · Finance Intelligence</small>
+  </footer>
+
+</main>
+
+<nav class="bottom-nav">
+  <button class="nav-item active" data-target="top">
+    <b>⌂</b><span>Beranda</span>
+  </button>
+  <button class="nav-item" data-target="office">
+    <b>▦</b><span>Kantor</span>
+  </button>
+  <button class="nav-item" data-target="team">
+    <b>♙</b><span>Tim</span>
+  </button>
+  <button class="nav-item" data-target="activity">
+    <b>☷</b><span>Aktivitas</span>
+  </button>
+</nav>
+
+<!-- EMPLOYEE MODAL -->
+<div class="modal-backdrop" id="employeeModal"
+  role="dialog" aria-modal="true">
+
+  <section class="employee-modal">
+    <div class="modal-top">
+      <span class="detail-label">PROFIL PERSONEL</span>
+      <button class="modal-close" id="modalClose">×</button>
+    </div>
+
+    <div class="modal-person">
+      <div class="modal-avatar" id="modalInitials">AL</div>
+      <div>
+        <h3 id="modalName">ALDI</h3>
+        <p id="modalRole">Direktur AI</p>
+      </div>
+    </div>
+
+    <div class="detail-label">TENTANG PEGAWAI</div>
+    <p class="detail-text" id="modalAbout"></p>
+
+    <div class="task-box">
+      <strong>◈ TUGAS SAAT INI</strong>
+      <p id="modalTask"></p>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="app.js?v=4"></script>
+<script type="module" src="office-integration.js?v=1"></script>
+
 </body>
 </html>

@@ -73,3 +73,232 @@
 .coordination-summary{padding:9px 10px;border-radius:9px;background:#0c1b29;color:#b8d5d1;font-size:10px;line-height:1.5;margin-bottom:9px}
 .coordination-button{width:100%;min-height:43px;border:0;border-radius:10px;background:#168f85;color:white;font:800 11px 'DM Sans',sans-serif}
 .coordination-button:active{transform:scale(.99)}
+
+
+/* =====================================
+   SAKAPAY AI OFFICE INTEGRATION
+===================================== */
+
+[hidden] {
+  display: none !important;
+}
+
+.integration-panel {
+  padding: 17px;
+  background: linear-gradient(145deg, #17283e, #111e30);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  margin-bottom: 15px;
+}
+
+.integration-panel label {
+  display: block;
+  color: #a9bad0;
+  font-size: 11px;
+  font-weight: 700;
+  margin: 13px 0 7px;
+}
+
+.integration-panel input {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: none;
+  background: #0c1929;
+  color: var(--text);
+  font: 13px 'DM Sans', sans-serif;
+}
+
+.integration-panel input:focus {
+  border-color: var(--teal);
+}
+
+.primary-action {
+  width: 100%;
+  min-height: 42px;
+  padding: 11px 15px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #25c6ae, #128f88);
+  color: #062b2b;
+  font: 800 12px Manrope, sans-serif;
+  cursor: pointer;
+}
+
+.integration-panel form,
+.integration-panel .primary-action {
+  margin-top: 15px;
+}
+
+#integrationStatus,
+#yegiStatus {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+
+#integrationStatus[data-state="success"],
+#yegiStatus[data-state="success"] {
+  color: #62d9bd;
+}
+
+#integrationStatus[data-state="error"],
+#yegiStatus[data-state="error"] {
+  color: #ff8e91;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.panel-heading strong {
+  font: 800 13px Manrope;
+}
+
+.office-order-card {
+  padding: 13px;
+  margin-top: 9px;
+  background: #0d1b2c;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.office-order-head,
+.office-order-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.office-order-head strong {
+  font: 800 12px Manrope;
+}
+
+.office-order-head span {
+  padding: 5px 8px;
+  border-radius: 20px;
+  background: #1b3b3a;
+  color: #70dfc7;
+  font-size: 9px;
+}
+
+.office-order-meta {
+  color: #9aadc4;
+  font-size: 10px;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+
+.office-order-foot {
+  margin-top: 12px;
+  color: #e1ecf8;
+  font-size: 11px;
+}
+
+.office-order-foot small {
+  color: #8196af;
+  font-size: 9px;
+  text-align: right;
+}
+
+.office-order-empty {
+  padding: 22px 10px;
+  color: #8196af;
+  text-align: center;
+  font-size: 11px;
+}
+
+/* YEGI */
+
+.yegi-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin: 15px 0;
+}
+
+.yegi-actions button {
+  min-height: 40px;
+  padding: 9px;
+  border-radius: 10px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.yegi-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 15px;
+}
+
+.yegi-metric {
+  min-width: 0;
+  padding: 13px;
+  background: #0d1b2c;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.yegi-metric small {
+  display: block;
+  color: #8fa2ba;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .7px;
+}
+
+.yegi-metric strong {
+  display: block;
+  margin-top: 8px;
+  color: #69dcca;
+  font: 800 15px Manrope;
+  overflow-wrap: anywhere;
+}
+
+.yegi-results {
+  margin-top: 13px;
+}
+
+#refreshOfficeOrders:disabled,
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.meeting-controls button {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 15px;
+  background: #168f85;
+  color: white;
+  font-weight: 700;
+}
+
+.meeting-controls button + button {
+  background: #e9dfcf;
+  color: #463b30;
+}
+
+@media(max-width:420px) {
+  .integration-panel {
+    padding: 13px;
+  }
+
+  .yegi-metric {
+    padding: 10px;
+  }
+
+  .yegi-metric strong {
+    font-size: 13px;
+  }
+}
+
