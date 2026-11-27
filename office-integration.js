@@ -58,8 +58,9 @@ async function loadOrders() {
     const orders = Array.isArray(result.data) ? result.data : [];
     showOrders(orders);
     const taskSync = window.SakaOfficeTasks?.syncWebsiteOrders?.(orders) || { created: 0, updated: 0 };
+    const coordination = window.SakaOfficeTasks?.runAldiCoordination?.({ silent: true }) || { created: 0, skipped: 0, checked: 0 };
     const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    setStatus(`${result.meta?.count ?? orders.length} pesanan dimuat · ${taskSync.created} tugas baru · sinkron ${time}. Mode baca-saja.`, 'success');
+    setStatus(`${result.meta?.count ?? orders.length} pesanan dimuat · ${taskSync.created} tugas PUTRA · ${coordination.created} tugas ALDI baru · sinkron ${time}. Otomatis aktif; mode baca-saja.`, 'success');
   } catch (error) {
     setStatus(error.message || 'Gagal mengambil pesanan.', 'error');
   } finally {

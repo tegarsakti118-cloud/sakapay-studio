@@ -338,13 +338,14 @@ function saveCoordinationMap(){
   try { localStorage.setItem(coordinationMapKey, JSON.stringify(coordinationMap)); }
   catch(error){ toast('Penyimpanan koordinasi tidak tersedia'); }
 }
-function runAldiCoordination(){
+function runAldiCoordination(options = {}){
+  const silent = options.silent === true;
   const sourceTasks = officeTasks.filter(task => task.source === 'website' && task.orderId);
   if (!sourceTasks.length) {
     const summary = document.querySelector('#coordinationSummary');
     if (summary) summary.textContent = 'Belum ada pesanan website untuk dikoordinasikan.';
-    toast('Belum ada pesanan website');
-    return;
+    if (!silent) toast('Belum ada pesanan website');
+    return { created: 0, skipped: 0 };
   }
   let created = 0;
   let skipped = 0;
@@ -392,7 +393,8 @@ function runAldiCoordination(){
   }
   const summary = document.querySelector('#coordinationSummary');
   if (summary) summary.textContent = `${created} tugas baru dibuat · ${skipped} tugas dilewati karena sudah pernah dibuat · ${sourceTasks.length} pesanan diperiksa.`;
-  toast(created ? `${created} tugas koordinasi dibuat` : 'Tidak ada tugas baru untuk dibuat');
+  if (!silent) toast(created ? `${created} tugas koordinasi dibuat` : 'Tidak ada tugas baru untuk dibuat');
+  return { created, skipped, checked: sourceTasks.length };
 }
 document.querySelector('#runCoordination')?.addEventListener('click', runAldiCoordination);
 window.SakaOfficeTasks = { syncWebsiteOrders, runAldiCoordination };
