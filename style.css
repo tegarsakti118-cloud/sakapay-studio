@@ -302,3 +302,106 @@ button:disabled {
   }
 }
 
+
+/* =================================
+   YEGI PPOB CENTER - UI
+================================= */
+
+.yegi-toolbar {
+  display: grid;
+  grid-template-columns: 1fr 145px;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.yegi-toolbar input,
+.yegi-toolbar select {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, .2);
+  border-radius: 13px;
+  background: #0f1d30;
+  color: #e2e8f0;
+  outline: none;
+}
+
+.yegi-toolbar input:focus,
+.yegi-toolbar select:focus {
+  border-color: #17a897;
+}
+
+.yegi-data-card {
+  margin-bottom: 12px;
+}
+
+.yegi-data-card[hidden] {
+  display: none !important;
+}
+
+.yegi-game-card {
+  padding: 16px;
+}
+
+.yegi-game-main {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 13px;
+}
+
+.yegi-game-image {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 15px;
+  background: #1c3447;
+}
+
+.yegi-game-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.yegi-logo-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #17a897, #128577);
+  color: white;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.yegi-game-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.yegi-game-info .office-order-head {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.yegi-game-info strong {
+  font-size: 15px;
+}
+
+.yegi-game-info .office-order-meta {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .yegi-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .yegi-game-image {
+    width: 52px;
+    height: 52px;
+  }
+}
