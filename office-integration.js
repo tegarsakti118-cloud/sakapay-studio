@@ -318,8 +318,9 @@ async function yegiLoadTransactions() {
 
 // PRODUK DAN GAME
 
+
 async function yegiLoadCatalog(action, label) {
-  setYegiStatus(`Memeriksa struktur data ${label}...`);
+  setYegiStatus(`Mengambil ${label.toLowerCase()}...`);
   yegiResults.innerHTML = '';
 
   try {
@@ -328,34 +329,61 @@ async function yegiLoadCatalog(action, label) {
 
     if (!rows.length) {
       yegiResults.innerHTML =
-        '<div class="office-order-empty">Gateway tidak mengirim data.</div>';
-      setYegiStatus('Data kosong. Total: 0', 'error');
+        '<div class="office-order-empty">Data kosong.</div>';
+
+      setYegiStatus(`${label}: 0 data.`, 'success');
       return;
     }
 
-    yegiResults.innerHTML = rows.map((row, index) => `
-      <article class="office-order-card">
-        <strong style="color:#7ce5d3">
-          DATA ${index + 1}
-        </strong>
-        <pre style="
-          color:#e2e8f0;
-          white-space:pre-wrap;
-          overflow-wrap:anywhere;
-          font-size:12px;
-          line-height:1.6;
-          margin-top:12px;
-        ">${safe(JSON.stringify(row, null, 2))}</pre>
-      </article>
-    `).join('');
+    yegiResults.innerHTML = rows.map(row => {
+      const name = row.name || row.game_name || row.title || 'Tanpa nama';
+
+      return `
+        <article class="office-order-card">
+          <div class="office-order-head">
+            <strong>${safe(name)}</strong>
+            <span>${row.is_active ? 'Aktif' : 'Nonaktif'}</span>
+          </div>
+
+          <div class="office-order-meta">
+            Slug: ${safe(row.slug || '-')}
+          </div>
+
+          ${row.id_instruction ? `
+            <div class="office-order-meta">
+              Instruksi: ${safe(row.id_instruction)}
+            </div>
+          ` : ''}
+
+          <div class="office-order-meta">
+            Zona ID: ${row.requires_zone_id ? 'Diperlukan' : 'Tidak diperlukan'}
+          </div>
+
+          ${row.nominal_label ? `
+            <div class="office-order-meta">
+              ${safe(row.nominal_label)}
+            </div>
+          ` : ''}
+
+          ${row.sell_price != null ? `
+            <div class="office-order-foot">
+              <span>Harga jual ${rupiah(row.sell_price)}</span>
+              <small>Profit ${rupiah(row.profit)}</small>
+            </div>
+          ` : ''}
+        </article>
+      `;
+    }).join('');
 
     setYegiStatus(
-      `${rows.length} data berhasil diterima. Struktur data ditampilkan.`,
+      `${rows.length} ${label.toLowerCase()} berhasil dimuat.`,
       'success'
     );
 
   } catch (error) {
-    yegiResults.textContent = error.message;
+    yegiResults.innerHTML =
+      `<div class="office-order-empty">${safe(error.message)}</div>`;
+
     setYegiStatus(error.message, 'error');
   }
 }
