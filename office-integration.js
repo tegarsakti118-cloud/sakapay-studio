@@ -317,53 +317,49 @@ async function yegiLoadTransactions() {
 }
 
 // PRODUK DAN GAME
+
 async function yegiLoadCatalog(action, label) {
-  setYegiStatus(`Mengambil ${label.toLowerCase()}…`);
+  setYegiStatus(`Memeriksa struktur data ${label}...`);
   yegiResults.innerHTML = '';
 
   try {
     const result = await callPpobGateway(action);
+    const rows = Array.isArray(result.data) ? result.data : [];
 
-    yegiResults.innerHTML = result.data?.length
-      ? result.data.map(row => `
-          <article class="office-order-card">
-            <div class="office-order-head">
-          
-          <strong>${safe(
-          row.name ||
-          row.game_name ||
-          row.title ||
-          row.product_name ||
-          row.label ||
-          row.code ||
-          'Nama game tidak tersedia'
-          )}</strong>
-              <span>${row.is_active ? 'Aktif' : 'Nonaktif'}</span>
-            </div>
+    if (!rows.length) {
+      yegiResults.innerHTML =
+        '<div class="office-order-empty">Gateway tidak mengirim data.</div>';
+      setYegiStatus('Data kosong. Total: 0', 'error');
+      return;
+    }
 
-            ${row.nominal_label
-              ? `<div class="office-order-meta">${safe(row.nominal_label)}</div>`
-              : ''}
-
-            ${row.sell_price != null
-              ? `<div class="office-order-foot">
-                  <span>Harga jual ${rupiah(row.sell_price)}</span>
-                  <small>Profit ${rupiah(row.profit)}</small>
-                </div>`
-              : ''}
-          </article>
-        `).join('')
-      : '<div class="office-order-empty">Data kosong.</div>';
+    yegiResults.innerHTML = rows.map((row, index) => `
+      <article class="office-order-card">
+        <strong style="color:#7ce5d3">
+          DATA ${index + 1}
+        </strong>
+        <pre style="
+          color:#e2e8f0;
+          white-space:pre-wrap;
+          overflow-wrap:anywhere;
+          font-size:12px;
+          line-height:1.6;
+          margin-top:12px;
+        ">${safe(JSON.stringify(row, null, 2))}</pre>
+      </article>
+    `).join('');
 
     setYegiStatus(
-      `${result.count ?? result.data?.length ?? 0} ${label.toLowerCase()} dimuat.`,
+      `${rows.length} data berhasil diterima. Struktur data ditampilkan.`,
       'success'
     );
 
   } catch (error) {
+    yegiResults.textContent = error.message;
     setYegiStatus(error.message, 'error');
   }
 }
+
 
 $('#yegiLoadSummary')?.addEventListener('click', yegiLoadSummary);
 
