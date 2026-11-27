@@ -753,6 +753,257 @@ $('#yegiLoadGames')?.addEventListener(
 // Status awal
 setYegiStatus('Login admin untuk mengakses data PPOB.');
 
+
+// ==============================
+// MELA WHATSAPP INBOX
+// ==============================
+
+const melaStatus = $('#melaStatus');
+const melaRefresh = $('#melaRefresh');
+const melaConversationCount = $('#melaConversationCount');
+const melaConversationList = $('#melaConversationList');
+const melaChatHeading = $('#melaChatHeading');
+const melaMessageList = $('#melaMessageList');
+const melaReplyText = $('#melaReplyText');
+const melaSendReply = $('#melaSendReply');
+
+let melaSelectedConversation = null;
+let melaPollingTimer = null;
+let melaLoading = false;
+
+function setMelaStatus(message, type = '') {
+  if (!melaStatus) return;
+
+  melaStatus.textContent = message;
+  melaStatus.dataset.state = type;
+}
+
+function formatMelaTime(value) {
+  if (!value) return '-';
+
+  return new Date(value).toLocaleString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function renderMelaConversations(rows) {
+  if (!melaConversationList) return;
+
+  if (!rows.length) {
+    melaConversationList.innerHTML =
+      '<div class="office-order-empty">Belum ada percakapan WhatsApp.</div>';
+    return;
+  }
+
+  melaConversationList.innerHTML = rows.map(row => `
+    <button
+      type="button"
+      class="mela-conversation-item ${
+        melaSelectedConversation === row.id ? 'active' : ''
+      }"
+      data-conversation-id="${safe(row.id)}"
+    >
+      <div class="mela-conversation-head">
+        <strong>${safe(row.customer_name || row.wa_id)}</strong>
+        ${
+          Number(row.unread_count || 0) > 0
+            ? `<span class="mela-unread">${Number(row.unread_count)}</span>`
+            : ''
+        }
+      </div>
+
+      <div class="mela-conversation-preview">
+        ${safe(row.last_message || 'Belum ada pesan')}
+      </div>
+
+      <small>${formatMelaTime(row.last_message_at)}</small>
+    </button>
+  `).join('');
+
+  melaConversationList
+    .querySelectorAll('[data-conversation-id]')
+    .forEach(button => {
+      button.addEventListener('click', () => {
+        melaOpenConversation(button.dataset.conversationId);
+      });
+    });
+}
+
+async function melaLoadConversations() {
+  if (!currentSession || melaLoading) return;
+
+  melaLoading = true;
+
+  try {
+    const { data, error } = await supabase
+      .from('mela_conversations')
+      .select('*')
+      .order('last_message_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    const rows = data || [];
+
+    if (melaConversationCount) {
+      melaConversationCount.textContent = rows.length;
+    }
+
+    renderMelaConversations(rows);
+
+    if (melaSelectedConversation) {
+      const exists = rows.some(
+        row => row.id === melaSelectedConversation
+      );
+
+      if (exists) {
+        await melaLoadMessages(melaSelectedConversation);
+      } else {
+        melaSelectedConversation = null;
+      }
+    }
+
+    setMelaStatus(
+      `${rows.length} percakapan dimuat · ${formatMelaTime(new Date())}`,
+      'success'
+    );
+
+  } catch (error) {
+    setMelaStatus(
+      `Gagal mengambil inbox: ${error.message}`,
+      'error'
+    );
+  } finally {
+    melaLoading = false;
+  }
+}
+
+async function melaOpenConversation(conversationId) {
+  melaSelectedConversation = conversationId;
+
+  const { data, error } = await supabase
+    .from('mela_conversations')
+    .select('*')
+    .eq('id', conversationId)
+    .single();
+
+  if (error) {
+    setMelaStatus(error.message, 'error');
+    return;
+  }
+
+  if (melaChatHeading) {
+    melaChatHeading.textContent =
+      data.customer_name || data.wa_id || 'Percakapan';
+  }
+
+  renderMelaConversations(
+    await melaGetConversationList()
+  );
+
+  await melaLoadMessages(conversationId);
+}
+
+async function melaGetConversationList() {
+  const { data } = await supabase
+    .from('mela_conversations')
+    .select('*')
+    .order('last_message_at', { ascending: false })
+    .limit(50);
+
+  return data || [];
+}
+
+async function melaLoadMessages(conversationId) {
+  if (!melaMessageList) return;
+
+  const { data, error } = await supabase
+    .from('mela_messages')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true })
+    .limit(200);
+
+  if (error) {
+    melaMessageList.innerHTML =
+      `<div class="office-order-empty">${safe(error.message)}</div>`;
+    return;
+  }
+
+  const messages = data || [];
+
+  if (!messages.length) {
+    melaMessageList.innerHTML =
+      '<div class="office-order-empty">Belum ada pesan.</div>';
+    return;
+  }
+
+  melaMessageList.innerHTML = messages.map(message => `
+    <div class="mela-message ${
+      message.direction === 'outgoing' ? 'outgoing' : 'incoming'
+    }">
+      <div class="mela-message-bubble">
+        ${safe(message.message_text || '[Pesan media]')}
+      </div>
+      <small>
+        ${formatMelaTime(message.created_at)}
+        ${message.direction === 'outgoing'
+          ? ` · ${safe(message.delivery_status || 'terkirim')}`
+          : ''}
+      </small>
+    </div>
+  `).join('');
+
+  melaMessageList.scrollTop = melaMessageList.scrollHeight;
+}
+
+function melaStartPolling() {
+  melaStopPolling();
+
+  melaPollingTimer = setInterval(() => {
+    if (!document.hidden && currentSession) {
+      melaLoadConversations();
+    }
+  }, 10000);
+}
+
+function melaStopPolling() {
+  if (melaPollingTimer) {
+    clearInterval(melaPollingTimer);
+  }
+
+  melaPollingTimer = null;
+}
+
+melaRefresh?.addEventListener('click', melaLoadConversations);
+
+// Pengiriman pesan menunggu Edge Function mela-send.
+if (melaSendReply) {
+  melaSendReply.disabled = true;
+  melaSendReply.title =
+    'Pengiriman WhatsApp belum diaktifkan. Menunggu Edge Function mela-send.';
+}
+
+window.addEventListener('sakapay-office-session-changed', () => {
+  if (currentSession) {
+    melaLoadConversations();
+    melaStartPolling();
+  } else {
+    melaStopPolling();
+
+    if (melaConversationList) melaConversationList.innerHTML = '';
+    if (melaMessageList) melaMessageList.innerHTML = '';
+    if (melaConversationCount) melaConversationCount.textContent = '0';
+
+    melaSelectedConversation = null;
+    setMelaStatus('Login admin untuk membuka inbox.');
+  }
+});
+
+
 // ==============================
 // LOGIN ADMIN
 // ==============================
