@@ -328,7 +328,16 @@ async function yegiLoadCatalog(action, label) {
       ? result.data.map(row => `
           <article class="office-order-card">
             <div class="office-order-head">
-              <strong>${safe(row.name)}</strong>
+          
+          <strong>${safe(
+          row.name ||
+          row.game_name ||
+          row.title ||
+          row.product_name ||
+          row.label ||
+          row.code ||
+          'Nama game tidak tersedia'
+          )}</strong>
               <span>${row.is_active ? 'Aktif' : 'Nonaktif'}</span>
             </div>
 
