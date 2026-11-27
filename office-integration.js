@@ -57,8 +57,8 @@ async function loadOrders() {
     }
     const orders = Array.isArray(result.data) ? result.data : [];
     showOrders(orders);
-    const taskSync = window.SakaOfficeTasks?.syncWebsiteOrders?.(orders) || { created: 0, updated: 0 };
-    const coordination = window.SakaOfficeTasks?.runAldiCoordination?.({ silent: true }) || { created: 0, skipped: 0, checked: 0 };
+    const taskSync = await (window.SakaOfficeTasks?.syncWebsiteOrders?.(orders) || Promise.resolve({ created: 0, updated: 0 }));
+    const coordination = await (window.SakaOfficeTasks?.runAldiCoordination?.({ silent: true }) || Promise.resolve({ created: 0, skipped: 0, checked: 0 }));
     const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     setStatus(`${result.meta?.count ?? orders.length} pesanan dimuat · ${taskSync.created} tugas PUTRA · ${coordination.created} tugas ALDI baru · sinkron ${time}. Otomatis aktif; mode baca-saja.`, 'success');
   } catch (error) {
@@ -103,6 +103,7 @@ loginForm.addEventListener('submit', async (event) => {
   submit.disabled = false;
   if (error) return setStatus(error.message, 'error');
   await syncSession();
+  window.dispatchEvent(new Event('sakapay-office-session-changed'));
 });
 refreshBtn.addEventListener('click', loadOrders);
 logoutBtn.addEventListener('click', async () => {
@@ -110,6 +111,7 @@ logoutBtn.addEventListener('click', async () => {
   await supabase.auth.signOut();
   ordersList.innerHTML = '';
   await syncSession();
+  window.dispatchEvent(new Event('sakapay-office-session-changed'));
 });
 supabase.auth.onAuthStateChange(() => { syncSession(); });
 document.addEventListener('visibilitychange', () => {

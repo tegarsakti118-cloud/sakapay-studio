@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const OFFICE_SUPABASE_URL = 'https://nvmnbrsvybtviqwgmikc.supabase.co';
+const OFFICE_SUPABASE_ANON_KEY = 'sb_publishable_bD5fNZ-Km0GF4ktAbd1LDg_nS1FSh3L';
+const officeDb = createClient(OFFICE_SUPABASE_URL, OFFICE_SUPABASE_ANON_KEY);
 
 const employees = [
   {name:'ALDI',role:'Direktur AI',initials:'AL',area:'Ruang Direktur',task:'Mengatur prioritas kerja tim dan menyiapkan ringkasan kondisi bisnis SakaPay.',about:'Memimpin koordinasi delapan personel AI dan menjadi pusat kendali operasional kantor.'},
@@ -278,127 +283,176 @@ function animate(){
 function toast(message){const el=document.querySelector('#toast');el.textContent=message;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1900)}
 
 
-// FASE 4: local task management engine (no external AI/API connection).
+// FASE 5E.4: shared task management engine (Supabase Project A).
+// Legacy local tasks are migrated once; Supabase is the source of truth after login.
 const taskStoreKey = 'sakapay-ai-office-tasks-v1';
 const orderTaskMapKey = 'sakapay-ai-office-order-task-map-v1';
+const migrationFlagKey = 'sakapay-ai-office-tasks-migrated-v1';
 let officeTasks = [];
 let orderTaskMap = {};
-try { orderTaskMap = JSON.parse(localStorage.getItem(orderTaskMapKey) || '{}') || {}; } catch { orderTaskMap = {}; }
-try {
-  const savedTasks = JSON.parse(localStorage.getItem(taskStoreKey) || '[]');
-  officeTasks = Array.isArray(savedTasks) ? savedTasks : [];
-} catch (error) {
-  console.warn('Task storage could not be read:', error);
-}
-let nextTaskId = officeTasks.reduce((max, task) => Math.max(max, Number(task.id) || 0), 0) + 1;
+let taskDbReady = false;
+let taskDbLoading = false;
 
-function saveOfficeTasks(){
-  try { localStorage.setItem(taskStoreKey, JSON.stringify(officeTasks)); }
-  catch(error){ toast('Penyimpanan perangkat penuh atau tidak tersedia'); }
+const employeeNames = ['ALDI','YEGI','RIKA','PUTRA','MELA','ARYA','NONI','GITA'];
+const employeeIndex = (name) => Math.max(0, employeeNames.indexOf(String(name || '').toUpperCase()));
+const dbStatus = (status) => ({
+  'Menunggu':'pending', 'Dikerjakan':'in_progress', 'Selesai':'completed',
+  'Tertunda':'pending', 'pending':'pending', 'in_progress':'in_progress',
+  'completed':'completed', 'cancelled':'cancelled'
+}[String(status || '')] || 'pending');
+const uiStatus = (status) => ({
+  pending:'Menunggu', in_progress:'Dikerjakan', completed:'Selesai',
+  cancelled:'Dibatalkan'
+}[status] || 'Menunggu');
+const dbPriority = (priority) => ({
+  'Normal':'normal', 'Tinggi':'high', 'Mendesak':'urgent',
+  normal:'normal', high:'high', urgent:'urgent', low:'low'
+}[String(priority || '')] || 'normal');
+
+function safeCreatedAt(value) {
+  if (!value) return new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
 }
-function saveOrderTaskMap(){
-  try { localStorage.setItem(orderTaskMapKey, JSON.stringify(orderTaskMap)); }
-  catch(error){ toast('Penyimpanan perangkat penuh atau tidak tersedia'); }
+function mapDbTask(row) {
+  const metadata = row.metadata || {};
+  return {
+    id: row.id,
+    dbId: row.id,
+    title: row.title,
+    description: row.description || '',
+    assignee: employeeIndex(row.assigned_to),
+    priority: ({low:'Rendah',normal:'Normal',high:'Tinggi',urgent:'Mendesak'})[row.priority] || 'Normal',
+    status: uiStatus(row.status),
+    result: metadata.result || row.description || '',
+    createdAt: safeCreatedAt(row.created_at),
+    createdAtRaw: row.created_at,
+    source: metadata.source || (row.task_type === 'website_order' ? 'website' : row.task_type === 'aldi_followup' ? 'aldi-coordination' : 'director'),
+    orderId: row.source_order_id || metadata.order_id || null,
+    orderStatus: row.source_order_status || metadata.website_status || null,
+    idempotencyKey: row.idempotency_key,
+    metadata
+  };
 }
-function syncWebsiteOrders(orders){
-  let created = 0;
-  let updated = 0;
-  (Array.isArray(orders) ? orders : []).forEach(order => {
-    const orderId = String(order?.id ?? '').trim();
-    if (!orderId) return;
-    const rawStatus = String(order.status || 'Menunggu Pembayaran');
-    const normalized = rawStatus.toLowerCase();
-    const taskStatus = normalized.includes('selesai') ? 'Selesai' : normalized.includes('diproses') ? 'Dikerjakan' : 'Menunggu';
-    const title = `Pesanan website: ${String(order.produk || 'Produk').slice(0, 70)} · ${orderId}`;
-    const existingId = orderTaskMap[orderId];
-    const existing = existingId ? officeTasks.find(task => task.id === existingId) : null;
-    if (existing) {
-      if (existing.status !== 'Selesai' && taskStatus !== existing.status) {
-        existing.status = taskStatus;
-        existing.result = `Status dari website: ${rawStatus}. Data dibaca otomatis, tindakan transaksi tetap manual.`;
-        updated++;
-      }
-      existing.orderStatus = rawStatus;
+async function currentOfficeSession() {
+  const { data, error } = await officeDb.auth.getSession();
+  if (error) throw error;
+  return data.session;
+}
+function setTaskSyncNote(message, error=false) {
+  const disclaimer = document.querySelector('.task-disclaimer');
+  if (disclaimer) disclaimer.textContent = message;
+  if (disclaimer) disclaimer.dataset.state = error ? 'error' : 'success';
+}
+async function loadSharedTasks() {
+  if (taskDbLoading) return;
+  taskDbLoading = true;
+  try {
+    const session = await currentOfficeSession();
+    if (!session) {
+      taskDbReady = false;
+      setTaskSyncNote('Login admin pada bagian Pesanan Website untuk menghubungkan Task Center ke database bersama. Tugas lokal lama tetap tersimpan di perangkat.');
       return;
     }
-    const task = { id: nextTaskId++, title, assignee: 3, priority: taskStatus === 'Dikerjakan' ? 'Tinggi' : 'Normal', status: taskStatus, result: `Order ${orderId} · ${rawStatus}. PUTRA memantau; tidak ada top-up atau perubahan transaksi otomatis.`, createdAt: new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}), source: 'website', orderId, orderStatus: rawStatus };
-    officeTasks.push(task); orderTaskMap[orderId] = task.id; created++;
+    const { data, error } = await officeDb.from('office_tasks')
+      .select('*').order('created_at', { ascending:false }).limit(500);
+    if (error) throw error;
+    officeTasks = (data || []).map(mapDbTask);
+    taskDbReady = true;
+    await migrateLegacyTasks();
+    // Reload after migration so local migrated records are reflected from server.
+    const { data: refreshed, error: refreshError } = await officeDb.from('office_tasks')
+      .select('*').order('created_at', { ascending:false }).limit(500);
+    if (refreshError) throw refreshError;
+    officeTasks = (refreshed || []).map(mapDbTask);
+    renderTaskBoard();
+    setTaskSyncNote('Task Center tersambung ke Supabase Project A. Data bersama aktif; riwayat perubahan disimpan di database.');
+  } catch (error) {
+    taskDbReady = false;
+    setTaskSyncNote(`Sinkronisasi Task Center gagal: ${error.message}. Data lokal belum dihapus.`, true);
+    console.error('Shared task load failed:', error);
+  } finally {
+    taskDbLoading = false;
+  }
+}
+async function writeTaskEvent(taskId, eventType, description, actor, metadata={}) {
+  const { error } = await officeDb.from('office_task_events').insert({
+    task_id: taskId, event_type:eventType, description, actor,
+    metadata
   });
-  if (created || updated) {
-    saveOfficeTasks(); saveOrderTaskMap(); renderTaskBoard();
-    if (created) logTaskActivity('PUTRA','PU',`${created} tugas pesanan website dibuat otomatis.`);
-    if (updated) logTaskActivity('ALDI','AL',`${updated} status tugas pesanan disinkronkan dari website.`);
-  }
-  return { created, updated };
+  if (error) console.error('Task event insert failed:', error);
 }
-const coordinationMapKey = 'sakapay-ai-office-coordination-map-v1';
-let coordinationMap = {};
-try { coordinationMap = JSON.parse(localStorage.getItem(coordinationMapKey) || '{}') || {}; } catch { coordinationMap = {}; }
-function saveCoordinationMap(){
-  try { localStorage.setItem(coordinationMapKey, JSON.stringify(coordinationMap)); }
-  catch(error){ toast('Penyimpanan koordinasi tidak tersedia'); }
-}
-function runAldiCoordination(options = {}){
-  const silent = options.silent === true;
-  const sourceTasks = officeTasks.filter(task => task.source === 'website' && task.orderId);
-  if (!sourceTasks.length) {
-    const summary = document.querySelector('#coordinationSummary');
-    if (summary) summary.textContent = 'Belum ada pesanan website untuk dikoordinasikan.';
-    if (!silent) toast('Belum ada pesanan website');
-    return { created: 0, skipped: 0 };
-  }
-  let created = 0;
-  let skipped = 0;
-  sourceTasks.forEach(sourceTask => {
-    const orderId = String(sourceTask.orderId);
-    const raw = String(sourceTask.orderStatus || '').toLowerCase();
-    let plan = [];
-    if (raw.includes('menunggu')) {
-      plan = [
-        { key:'customer-draft', assignee:4, title:`Siapkan draf tindak lanjut pelanggan · ${orderId}`, detail:`MELA: siapkan draf pesan yang sopan untuk order ${orderId}. Jangan kirim pesan otomatis; direktur harus memeriksa dan mengirimnya.` },
-        { key:'admin-log', assignee:2, title:`Catat status pesanan untuk tindak lanjut · ${orderId}`, detail:`RIKA: catat status website “${sourceTask.orderStatus}” dan siapkan catatan tindak lanjut. Jangan menyimpulkan pembayaran sudah diterima.` }
-      ];
-    } else if (raw.includes('diproses') || raw.includes('proses')) {
-      plan = [
-        { key:'finance-review', assignee:1, title:`Tinjau catatan order yang sedang diproses · ${orderId}`, detail:`YEGI: tinjau informasi order ${orderId} dan tandai hal yang perlu diperiksa direktur. Jangan mengubah saldo atau transaksi.` },
-        { key:'ops-log', assignee:2, title:`Catat perkembangan operasional · ${orderId}`, detail:`RIKA: dokumentasikan status website “${sourceTask.orderStatus}” untuk order ${orderId}.` }
-      ];
-    } else if (raw.includes('selesai')) {
-      plan = [
-        { key:'completion-record', assignee:2, title:`Arsipkan catatan penyelesaian order · ${orderId}`, detail:`RIKA: catat bahwa website menampilkan status “${sourceTask.orderStatus}”. Ini hanya pencatatan status, bukan verifikasi independen top-up.` }
-      ];
-    } else {
-      plan = [
-        { key:'status-review', assignee:0, title:`Tinjau status pesanan website · ${orderId}`, detail:`ALDI: minta direktur meninjau status “${sourceTask.orderStatus || 'Tidak diketahui'}” untuk order ${orderId}.` }
-      ];
+async function migrateLegacyTasks() {
+  if (localStorage.getItem(migrationFlagKey) === 'true') return;
+  let legacy = [];
+  try {
+    legacy = JSON.parse(localStorage.getItem(taskStoreKey) || '[]');
+    if (!Array.isArray(legacy)) legacy = [];
+  } catch { legacy = []; }
+  let migrated = 0;
+  for (const task of legacy) {
+    const legacyId = String(task.id ?? migrated);
+    const key = `legacy-local:${legacyId}`;
+    const { data: exists, error: findError } = await officeDb.from('office_tasks')
+      .select('id').eq('idempotency_key', key).maybeSingle();
+    if (findError) throw findError;
+    if (exists) continue;
+    const employee = employees[Number(task.assignee)] || employees[0];
+    const { data: inserted, error } = await officeDb.from('office_tasks').insert({
+      title: String(task.title || 'Tugas lama').slice(0,120),
+      description: task.result || null,
+      assigned_to: employee.name,
+      task_type: task.source === 'website' ? 'website_order' : task.source === 'aldi-coordination' ? 'aldi_followup' : 'director',
+      status: dbStatus(task.status),
+      priority: dbPriority(task.priority),
+      source_order_id: task.orderId || null,
+      source_order_status: task.orderStatus || null,
+      idempotency_key: key,
+      metadata: {
+        source: task.source || 'legacy-local',
+        result: task.result || '',
+        legacy_local_id: legacyId,
+        legacy_created_at: task.createdAt || null
+      }
+    }).select('id').single();
+    if (error) {
+      if (error.code === '23505') continue;
+      throw error;
     }
-    plan.forEach(item => {
-      const key = `${orderId}:${item.key}`;
-      if (coordinationMap[key]) { skipped++; return; }
-      const task = {
-        id: nextTaskId++, title: item.title, assignee: item.assignee,
-        priority: raw.includes('menunggu') ? 'Tinggi' : 'Normal',
-        status: 'Menunggu', result: item.detail,
-        createdAt: new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}),
-        source: 'aldi-coordination', orderId, parentOrderTaskId: sourceTask.id
-      };
-      officeTasks.push(task);
-      coordinationMap[key] = task.id;
-      created++;
-    });
-  });
-  if (created) {
-    saveOfficeTasks(); saveCoordinationMap(); renderTaskBoard();
-    logTaskActivity('ALDI','AL',`${created} tugas tindak lanjut dibuat dari ${sourceTasks.length} pesanan website.`);
+    await writeTaskEvent(inserted.id, 'legacy_migrated', 'Tugas lama dari browser dimigrasikan ke database bersama.', 'SYSTEM', {legacy_local_id:legacyId});
+    migrated++;
   }
+  localStorage.setItem(migrationFlagKey, 'true');
+  if (migrated) toast(`${migrated} tugas lama dipindahkan ke database`);
+}
+function saveOfficeTasks() {
+  // Intentionally no local write after FASE 5E.4; Supabase is authoritative.
+}
+function saveOrderTaskMap() {
+  try { localStorage.setItem(orderTaskMapKey, JSON.stringify(orderTaskMap)); } catch {}
+}
+async function syncWebsiteOrders(orders) {
+  // Server worker now owns website order task creation. This client method is retained
+  // for compatibility with office-integration.js and never creates duplicate tasks.
+  if (taskDbReady) await loadSharedTasks();
+  return { created:0, updated:0 };
+}
+async function runAldiCoordination(options = {}) {
+  const silent = options.silent === true;
+  if (!taskDbReady) {
+    if (!silent) toast('Login admin dahulu untuk memuat tugas bersama');
+    return {created:0, skipped:0, checked:0};
+  }
+  await loadSharedTasks();
   const summary = document.querySelector('#coordinationSummary');
-  if (summary) summary.textContent = `${created} tugas baru dibuat · ${skipped} tugas dilewati karena sudah pernah dibuat · ${sourceTasks.length} pesanan diperiksa.`;
-  if (!silent) toast(created ? `${created} tugas koordinasi dibuat` : 'Tidak ada tugas baru untuk dibuat');
-  return { created, skipped, checked: sourceTasks.length };
+  if (summary) summary.textContent = 'Koordinasi tindak lanjut pesanan dijalankan oleh backend server.';
+  if (!silent) toast('Koordinasi backend aktif; tidak membuat tugas duplikat dari browser');
+  return {created:0, skipped:0, checked:officeTasks.filter(t=>t.orderId).length};
 }
 document.querySelector('#runCoordination')?.addEventListener('click', runAldiCoordination);
-window.SakaOfficeTasks = { syncWebsiteOrders, runAldiCoordination };
-function renderTaskBoard(){
+window.SakaOfficeTasks = { syncWebsiteOrders, runAldiCoordination, loadSharedTasks };
+
+function renderTaskBoard() {
   const list = document.querySelector('#taskList');
   const summary = document.querySelector('#taskSummary');
   if(!list || !summary) return;
@@ -412,7 +466,7 @@ function renderTaskBoard(){
     list.innerHTML = '<div class="task-empty">Belum ada tugas. Berikan tugas pertama kepada tim.</div>';
     return;
   }
-  list.innerHTML = officeTasks.slice().sort((a,b)=>b.id-a.id).map(task=>{
+  list.innerHTML = officeTasks.slice().sort((a,b)=>new Date(b.createdAtRaw || 0)-new Date(a.createdAtRaw || 0)).map(task=>{
     const person = employees[task.assignee] || employees[0];
     const nextAction = task.status === 'Menunggu'
       ? `<button type="button" data-task-action="start" data-task-id="${task.id}">Mulai</button>`
@@ -424,30 +478,31 @@ function renderTaskBoard(){
     return `<article class="task-card">
       <div class="task-card-top"><span class="task-status status-${task.status.toLowerCase()}">${task.status}</span><span class="task-priority priority-${task.priority.toLowerCase()}">${task.priority}</span></div>
       <strong class="task-title">${escapeTaskText(task.title)}</strong>
-      <div class="task-meta"><span>${person.name} · ${person.role}</span><span>${task.createdAt}</span></div>
-      ${task.orderId ? `<p class="task-result">Sumber: ${task.source === 'website' ? 'Website' : 'Koordinasi ALDI'} · Order ${escapeTaskText(task.orderId)}</p>` : ''}
+      <div class="task-meta"><span>${person.name} · ${person.role}</span><span>${escapeTaskText(task.createdAt)}</span></div>
+      ${task.orderId ? `<p class="task-result">Sumber: ${task.source === 'website' ? 'Website' : task.source === 'aldi-coordination' ? 'Koordinasi ALDI' : 'Pesanan'} · Order ${escapeTaskText(task.orderId)}</p>` : ''}
       ${task.result ? `<p class="task-result">${escapeTaskText(task.result)}</p>` : ''}
-      <div class="task-actions">${nextAction}<button type="button" data-task-action="delete" data-task-id="${task.id}" class="delete">Hapus</button></div>
+      <div class="task-actions">${nextAction}</div>
     </article>`;
   }).join('');
 }
 function escapeTaskText(value){
-  return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 }
-function updateTaskStatus(id, status){
-  const task = officeTasks.find(item=>item.id===id);
+async function updateTaskStatus(id, status) {
+  if (!taskDbReady) { toast('Login admin dahulu untuk mengubah tugas bersama'); return; }
+  const task = officeTasks.find(item=>String(item.id)===String(id));
   if(!task) return;
-  task.status = status;
-  if(status === 'Selesai') task.result = 'Tugas ditandai selesai oleh Direktur. Hasil perlu diperiksa secara manual.';
-  else task.result = '';
-  saveOfficeTasks();
-  renderTaskBoard();
-  const person = employees[task.assignee] || employees[0];
-  logTaskActivity(person.name, person.initials, `Status tugas "${task.title}" diubah menjadi ${status}.`);
+  const { error } = await officeDb.from('office_tasks').update({
+    status:dbStatus(status),
+    metadata:{...(task.metadata || {}), result: status === 'Selesai' ? 'Tugas ditandai selesai oleh Direktur. Hasil perlu diperiksa secara manual.' : task.result || '', source:task.source || 'director'}
+  }).eq('id', task.id);
+  if(error){toast(`Gagal menyimpan: ${error.message}`);return;}
+  await writeTaskEvent(task.id,'status_changed',`Status tugas "${task.title}" diubah menjadi ${status}.`,'DIREKTUR',{status});
+  await loadSharedTasks();
   toast(`Status tugas: ${status}`);
 }
-function logTaskActivity(name, initials, message){
-  const item = {initials, name, message, time:'Baru saja'};
+function logTaskActivity(name, initials, message) {
+  const item = {initials,name,message,time:'Baru saja'};
   const container = document.querySelector('#activityList');
   if(!container) return;
   const row = document.createElement('div');
@@ -455,44 +510,47 @@ function logTaskActivity(name, initials, message){
   row.innerHTML = `<div class="activity-symbol">${escapeTaskText(initials)}</div><div class="activity-copy"><strong>${escapeTaskText(name)} · ${escapeTaskText(message)}</strong><small>Catatan aktivitas kantor</small></div><span class="activity-time">Baru saja</span>`;
   container.prepend(row);
 }
-document.querySelector('#taskForm')?.addEventListener('submit', event=>{
+document.querySelector('#taskForm')?.addEventListener('submit', async event=>{
   event.preventDefault();
   const title = document.querySelector('#taskTitle').value.trim();
   const assignee = Number(document.querySelector('#taskAssignee').value);
   const priority = document.querySelector('#taskPriority').value;
   if(!title){ toast('Isi deskripsi tugas terlebih dahulu'); return; }
-  officeTasks.push({
-    id: nextTaskId++,
-    title,
-    assignee,
-    priority,
-    status:'Menunggu',
-    result:'',
-    createdAt:new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
-  });
-  saveOfficeTasks();
-  renderTaskBoard();
+  if(!taskDbReady){toast('Login admin dahulu pada bagian Pesanan Website');return;}
+  const employee = employees[assignee] || employees[0];
+  const key = `director:${crypto.randomUUID()}`;
+  const {data, error} = await officeDb.from('office_tasks').insert({
+    title, description:null, assigned_to:employee.name, task_type:'director',
+    status:'pending', priority:dbPriority(priority), idempotency_key:key,
+    metadata:{source:'director',result:''}
+  }).select('id').single();
+  if(error){toast(`Gagal menyimpan tugas: ${error.message}`);return;}
+  await writeTaskEvent(data.id,'task_created',`Tugas baru diberikan kepada ${employee.name}: ${title}`,'DIREKTUR',{priority});
   document.querySelector('#taskTitle').value='';
-  const person = employees[assignee] || employees[0];
-  logTaskActivity(person.name, person.initials, `Menerima tugas baru: "${title}".`);
-  toast(`Tugas diberikan kepada ${person.name}`);
+  await loadSharedTasks();
+  toast(`Tugas diberikan kepada ${employee.name}`);
 });
 document.querySelector('#taskList')?.addEventListener('click', event=>{
   const button = event.target.closest('button[data-task-action]');
   if(!button) return;
-  const id = Number(button.dataset.taskId);
+  const id = button.dataset.taskId;
   const action = button.dataset.taskAction;
   if(action==='start') updateTaskStatus(id,'Dikerjakan');
   else if(action==='done') updateTaskStatus(id,'Selesai');
   else if(action==='hold') updateTaskStatus(id,'Tertunda');
-  else if(action==='delete'){
-    officeTasks = officeTasks.filter(task=>task.id!==id);
-    saveOfficeTasks();
-    renderTaskBoard();
-    toast('Tugas dihapus');
-  }
 });
 renderTaskBoard();
+window.addEventListener('sakapay-office-session-changed', () => setTimeout(loadSharedTasks, 0));
+officeDb.auth.onAuthStateChange((_event, session) => {
+  if (session) setTimeout(loadSharedTasks, 0);
+  else {
+    taskDbReady = false;
+    officeTasks = [];
+    renderTaskBoard();
+    setTaskSyncNote('Belum login. Task Center menunggu sesi admin Supabase.');
+  }
+});
+setTimeout(loadSharedTasks, 500);
 
 
 renderTeam();renderActivity();
