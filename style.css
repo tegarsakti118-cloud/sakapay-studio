@@ -540,3 +540,182 @@ button:disabled {
     height: 300px;
   }
 }
+
+/* MELA WHATSAPP INBOX */
+.mela-inbox-section {
+  margin: 24px 0 32px;
+  padding: 20px;
+  border: 1px solid rgba(148,163,184,.16);
+  border-radius: 22px;
+  background: #142438;
+  color: #e5edf7;
+}
+
+.mela-inbox-header,
+.mela-conversation-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mela-inbox-header h3 {
+  margin: 8px 0;
+  font-size: 23px;
+}
+
+.mela-inbox-header p {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.mela-status {
+  margin: 16px 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: #1c3548;
+  color: #a5f3df;
+  font-size: 13px;
+}
+
+.mela-inbox-stats {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: #1b3046;
+}
+
+.mela-inbox-layout {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  gap: 14px;
+}
+
+.mela-inbox-sidebar,
+.mela-chat-panel {
+  min-width: 0;
+  border: 1px solid rgba(148,163,184,.15);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0e1c2d;
+}
+
+.mela-panel-heading,
+.mela-chat-header {
+  padding: 15px;
+  border-bottom: 1px solid rgba(148,163,184,.15);
+}
+
+.mela-conversation-item {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  text-align: left;
+  color: #e5edf7;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(148,163,184,.12);
+  cursor: pointer;
+}
+
+.mela-conversation-item.active {
+  background: #1c3c4b;
+}
+
+.mela-conversation-preview {
+  margin: 8px 0;
+  color: #94a3b8;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.mela-conversation-item small,
+.mela-message small {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.mela-unread {
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: #17a897;
+  color: white;
+}
+
+.mela-message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 340px;
+  padding: 14px;
+  overflow-y: auto;
+}
+
+.mela-message {
+  max-width: 85%;
+}
+
+.mela-message.outgoing {
+  align-self: flex-end;
+  text-align: right;
+}
+
+.mela-message-bubble {
+  padding: 11px 13px;
+  border-radius: 13px;
+  background: #24384e;
+  overflow-wrap: anywhere;
+}
+
+.mela-message.outgoing .mela-message-bubble {
+  background: #126f68;
+}
+
+.mela-reply-area {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid rgba(148,163,184,.15);
+}
+
+.mela-reply-area textarea {
+  flex: 1;
+  min-width: 0;
+  resize: vertical;
+  padding: 11px;
+  border: 1px solid #33475c;
+  border-radius: 10px;
+  background: #142438;
+  color: white;
+}
+
+.mela-refresh-btn,
+.mela-reply-area button {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: #17a897;
+  color: white;
+  cursor: pointer;
+}
+
+.mela-reply-area button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+@media(max-width:700px) {
+  .mela-inbox-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .mela-inbox-section {
+    padding: 14px;
+  }
+
+  .mela-message-list {
+    height: 280px;
+  }
+}

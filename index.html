@@ -239,6 +239,83 @@
       <p class="subheading">
         Pusat percakapan dan layanan pelanggan SakaPay.
       </p>
+      
+<!-- MELA WHATSAPP INBOX -->
+<section class="mela-inbox-section" id="melaSection">
+
+  <div class="mela-inbox-header">
+    <div>
+      <span class="section-eyebrow">CUSTOMER SERVICE</span>
+      <h3>WhatsApp Inbox</h3>
+      <p>Percakapan pelanggan SakaPay secara terpusat.</p>
+    </div>
+
+    <button type="button" id="melaRefresh" class="mela-refresh-btn">
+      ↻ Refresh
+    </button>
+  </div>
+
+  <div class="mela-status" id="melaStatus">
+    Login admin untuk membuka inbox.
+  </div>
+
+  <div class="mela-inbox-stats">
+    <span>Total percakapan</span>
+    <strong id="melaConversationCount">0</strong>
+  </div>
+
+  <div class="mela-inbox-layout">
+
+    <!-- DAFTAR PELANGGAN -->
+    <div class="mela-inbox-sidebar">
+      <div class="mela-panel-heading">
+        <strong>Pesan masuk</strong>
+      </div>
+
+      <div id="melaConversationList">
+        <div class="office-order-empty">
+          Belum ada percakapan.
+        </div>
+      </div>
+    </div>
+
+    <!-- AREA CHAT -->
+    <div class="mela-chat-panel">
+
+      <div class="mela-chat-header">
+        <strong id="melaChatHeading">
+          Pilih percakapan
+        </strong>
+      </div>
+
+      <div id="melaMessageList" class="mela-message-list">
+        <div class="office-order-empty">
+          Pilih pelanggan untuk melihat pesan.
+        </div>
+      </div>
+
+      <!-- BALASAN -->
+      <div class="mela-reply-area">
+        <textarea
+          id="melaReplyText"
+          placeholder="Tulis balasan..."
+          rows="2"
+          disabled
+        ></textarea>
+
+        <button
+          type="button"
+          id="melaSendReply"
+          disabled
+        >
+          Kirim
+        </button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
     </div>
     <span class="team-count">MELA AI</span>
   </div>
